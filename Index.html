@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mes Recettes">
+<title>🥐 Cahier de Recettes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FAF6EF;
+    --parchment: #F2EAD8;
+    --wheat: #E2D0B0;
+    --caramel: #C49A3C;
+    --brown: #7B4F2E;
+    --dark: #3E2010;
+    --gray: #9A8C7A;
+    --text: #2C1A08;
+    --accent: #D4762A;
+    --green: #4A7A3A;
+    --red: #A03020;
+    --sidebar-w: 300px;
+    --header-h: 56px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--wheat); border-radius: 99px; }
+
+  /* ── Layout ── */
+  #app { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: var(--sidebar-w);
+    background: var(--dark);
+    display: flex;
+    flex-direction: column;
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    z-index: 200;
+    flex-shrink: 0;
+    height: 100%;
+  }
+  #sidebar.collapsed { transform: translateX(calc(-1 * var(--sidebar-w))); position: absolute; }
+  .sidebar-header {
+    padding: 20px 16px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .sidebar-title {
+    font-family: 'Playfair Display', serif;
+    color: #E2D0B0;
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .sidebar-count { color: var(--gray); font-size: 12px; margin-bottom: 12px; }
+  .search-box {
+    position: relative;
+  }
+  .search-box input {
+    width: 100%;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 8px;
+    padding: 7px 10px 7px 32px;
+    color: #E2D0B0;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+  .search-box input::placeholder { color: var(--gray); }
+  .search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--gray); pointer-events: none; font-size: 13px; }
+
+  #btn-new {
+    margin: 10px 12px 6px;
+    padding: 10px;
+    background: var(--caramel);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background .15s;
+  }
+  #btn-new:hover { background: var(--accent); }
+
+  #recipe-list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .recipe-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    height: 66px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .recipe-item:hover { background: rgba(255,255,255,.05); }
+  .recipe-item.active { background: rgba(196,154,60,.18); border-left-color: var(--caramel); }
+  .recipe-item-info { flex: 1; overflow: hidden; }
+  .recipe-item-name {
+    color: #D8CAB0;
+    font-weight: 500;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .recipe-item.active .recipe-item-name { color: #E8D8B0; font-weight: 700; }
+  .recipe-item-meta {
+    color: var(--gray);
+    font-size: 11px;
+    margin-top: 2px;
+    display: flex; gap: 8px;
+  }
+  .meta-total { color: var(--caramel); font-weight: 600; }
+  .item-btns { display: flex; gap: 3px; }
+  .item-btn {
+    background: rgba(255,255,255,.06);
+    border: none;
+    border-radius: 6px;
+    width: 27px;
+    height: 27px;
+    cursor: pointer;
+    color: var(--gray);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .item-btn:hover { background: rgba(196,154,60,.3); color: #fff; }
+  .item-btn.del:hover { background: rgba(160,48,32,.5); color: #fff; }
+  .item-btn.calc:hover { background: rgba(74,122,58,.4); color: #fff; }
+
+  /* ── Overlay sidebar mobile ── */
+  #sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 150;
+  }
+  #sidebar-overlay.visible { display: block; }
+
+  /* ── Toggle sidebar button ── */
+  #sidebar-toggle {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 300;
+    background: var(--dark);
+    color: #E2D0B0;
+    border: none;
+    border-radius: 50%;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.35);
+    transition: left .28s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── MAIN ── */
+  #main {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left .28s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── SCREEN ── */
+  .screen { display: none; padding: 20px 24px 40px; max-width: 780px; width: 100%; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  /* ── ACCUEIL ── */
+  .hero { text-align: center; padding: 32px 0 28px; }
+  .hero-icon { font-size: 52px; margin-bottom: 6px; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 900; color: var(--dark); margin-bottom: 4px; }
+  .hero p { color: var(--gray); font-size: 15px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--parchment);
+    border: 1px solid var(--wheat);
+    border-radius: 14px;
+    padding: 16px 12px;
+    text-align: center;
+  }
+  .stat-icon { font-size: 24px; margin-bottom: 4px; }
+  .stat-val { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--brown); }
+  .stat-lbl { color: var(--gray); font-size: 11px; margin-top: 2px; }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--brown);
+    border-bottom: 2px solid var(--wheat);
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+
+  .cats-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .cat-tag {
+    background: var(--wheat);
+    border-radius: 50px;
+    padding: 5px 14px;
+    font-size: 12px;
+    color: var(--brown);
+    font-weight: 600;
+  }
+  .cat-tag span { color: var(--caramel); }
+
+  .recent-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 10px; }
+  .recent-card {
+    background: var(--parchment);
+    border: 1px solid var(--wheat);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .recent-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+  .recent-card-name { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--dark); font-size: 14px; margin-bottom: 3px; }
+  .recent-card-cat { color: var(--gray); font-size: 11px; margin-bottom: 6px; }
+  .recent-card-total { color: var(--caramel); font-size: 12px; font-weight: 700; }
+
+  .empty-state { text-align: center; padding: 40px 0; color: var(--gray); }
+  .empty-state p { margin-bottom: 16px; font-size: 15px; }
+
+  /* ── APERCU ── */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .nav-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--dark); flex: 1; min-width: 0; }
+  .btn-back {
+    background: var(--parchment);
+    border: 1px solid var(--wheat);
+    border-radius: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+    color: var(--brown);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; gap: 4px;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .btn-back:hover { background: var(--wheat); }
+  .btn-primary {
+    background: var(--caramel);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; gap: 5px;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--accent); }
+  .btn-secondary {
+    background: var(--parchment);
+    border: 1px solid var(--wheat);
+    color: var(--brown);
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; gap: 5px;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .btn-secondary:hover { background: var(--wheat); }
+
+  .recipe-cat-badge {
+    display: inline-block;
+    background: var(--wheat);
+    color: var(--brown);
+    border-radius: 50px;
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+
+  .ing-table {
+    border: 1px solid var(--wheat);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .ing-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--wheat);
+    font-size: 14px;
+  }
+  .ing-row:nth-child(even) { background: var(--parchment); }
+  .ing-row:nth-child(odd) { background: var(--cream); }
+  .ing-row.total-row {
+    background: var(--dark);
+    border-bottom: none;
+  }
+  .ing-row.total-row .ing-name { color: #E2D0B0; font-weight: 700; font-size: 14px; }
+  .ing-row.total-row .ing-qty { color: var(--caramel); font-weight: 800; font-size: 16px; }
+  .ing-name { color: var(--text); }
+  .ing-qty { font-weight: 700; color: var(--brown); }
+
+  .notes-box {
+    background: var(--parchment);
+    border: 1px solid var(--wheat);
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    color: var(--text);
+  }
+
+  /* ── ÉDITEUR ── */
+  .form-group { margin-bottom: 18px; }
+  .form-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 6px;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--parchment);
+    border: 1.5px solid var(--wheat);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 15px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color .15s;
+    -webkit-appearance: none;
+  }
+  .form-input:focus { border-color: var(--caramel); }
+  .form-input.big {
+    font-family: 'Playfair Display', serif;
+    font-size: 19px;
+  }
+  textarea.form-input { resize: vertical; line-height: 1.6; }
+
+  .ing-editor-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+    animation: slideIn .15s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .ing-editor-row .form-input { padding: 8px 12px; font-size: 14px; border-radius: 9px; }
+  .ing-editor-row .qty-wrap { position: relative; flex: 0 0 110px; }
+  .ing-editor-row .qty-wrap input { padding-right: 26px; }
+  .qty-unit { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--gray); font-size: 12px; pointer-events: none; }
+  .del-ing-btn {
+    background: none;
+    border: 1px solid var(--wheat);
+    border-radius: 8px;
+    width: 34px; height: 34px;
+    cursor: pointer;
+    color: var(--red);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+    transition: all .15s;
+  }
+  .del-ing-btn:hover { background: rgba(160,48,32,.1); border-color: var(--red); }
+
+  #btn-add-ing {
+    width: 100%;
+    padding: 10px;
+    border: 2px dashed var(--wheat);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--gray);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    margin-top: 4px;
+    transition: all .15s;
+  }
+  #btn-add-ing:hover { border-color: var(--caramel); color: var(--caramel); }
+
+  .total-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    background: var(--dark);
+    border-radius: 10px;
+    margin-top: 12px;
+  }
+  .total-bar-label { color: #E2D0B0; font-weight: 700; font-size: 14px; }
+  .total-bar-val { color: var(--caramel); font-weight: 800; font-size: 20px; }
+
+  /* ── CALCULATEUR ── */
+  .calc-recipe-card {
+    background: var(--parchment);
+    border: 1px solid var(--wheat);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  .calc-recipe-name { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--dark); }
+  .calc-recipe-meta { color: var(--gray); font-size: 13px; margin-top: 4px; }
+  .calc-recipe-meta strong { color: var(--brown); }
+
+  .target-group { margin-bottom: 20px; }
+  .target-input-wrap { position: relative; display: flex; gap: 12px; align-items: center; }
+  .target-input-wrap input { flex: 1; padding-right: 40px; font-size: 18px; }
+  .target-unit { position: absolute; right: 90px; top: 50%; transform: translateY(-50%); color: var(--gray); font-weight: 600; font-size: 15px; pointer-events: none; }
+  .factor-badge {
+    background: var(--caramel);
+    color: #fff;
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-weight: 700;
+    font-size: 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .quick-btns { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+  .quick-btn {
+    padding: 5px 13px;
+    border-radius: 50px;
+    border: 1px solid var(--wheat);
+    background: var(--parchment);
+    color: var(--brown);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    transition: all .15s;
+  }
+  .quick-btn:hover, .quick-btn.active { background: var(--caramel); color: #fff; border-color: var(--caramel); }
+
+  .calc-table { border: 1px solid var(--wheat); border-radius: 12px; overflow: hidden; }
+  .calc-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1.2fr;
+    gap: 8px;
+    padding: 11px 18px;
+    background: var(--dark);
+  }
+  .calc-header span { color: #E2D0B0; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  .calc-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1.2fr;
+    gap: 8px;
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--wheat);
+    font-size: 14px;
+    align-items: center;
+  }
+  .calc-row:nth-child(even) { background: var(--parchment); }
+  .calc-row:nth-child(odd) { background: var(--cream); }
+  .calc-row.total-row { background: var(--dark); border-bottom: none; }
+  .calc-row.total-row span:first-child { color: #E2D0B0; font-weight: 700; font-size: 14px; }
+  .calc-row.total-row .base-col { color: var(--gray); font-weight: 700; font-size: 14px; }
+  .calc-row.total-row .result-col { color: var(--caramel); font-weight: 800; font-size: 18px; }
+  .base-col { color: var(--gray); }
+  .result-col { font-weight: 700; color: var(--brown); }
+  .result-col.highlight { color: var(--caramel); font-size: 15px; }
+
+  /* ── NOTIFICATION ── */
+  #notif {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--green);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 50px;
+    z-index: 9999;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.25);
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    white-space: nowrap;
+  }
+  #notif.show { transform: translateX(-50%) translateY(0); }
+  #notif.error { background: var(--red); }
+
+  /* ── Mobile responsive ── */
+  @media (max-width: 640px) {
+    :root { --sidebar-w: 280px; }
+    .screen { padding: 16px 16px 80px; }
+    .stats-grid { grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .stat-card { padding: 12px 8px; }
+    .stat-val { font-size: 22px; }
+    .stat-lbl { font-size: 10px; }
+    .hero h1 { font-size: 26px; }
+    .nav-bar { gap: 8px; }
+    .nav-title { font-size: 18px; }
+    .recent-grid { grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); }
+    .calc-header, .calc-row { grid-template-columns: 2fr 1fr 1.1fr; gap: 4px; }
+    .target-input-wrap { gap: 8px; }
+    .target-unit { right: 80px; }
+  }
+
+  /* ── IMPRESSION / EXPORT PDF ── */
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+    #app, #main { display: block !important; overflow: visible !important; height: auto !important; }
+    #sidebar, #sidebar-toggle, #sidebar-overlay, #bottom-nav,
+    .nav-bar, .target-group, .quick-btns, #btn-new,
+    .btn-back, .btn-primary, .btn-secondary, #btn-export { display: none !important; }
+    .screen { display: none !important; padding: 0 !important; }
+    #screen-calc { display: block !important; }
+    #print-header { display: block !important; }
+    .calc-recipe-card { break-inside: avoid; margin-bottom: 16px !important; }
+    .calc-table { break-inside: avoid; }
+    .calc-row, .calc-header { padding: 8px 14px !important; }
+    body { font-size: 12px; }
+    @page { margin: 1.5cm; size: A4; }
+  }
+
+  #print-header {
+    display: none;
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #C49A3C;
+  }
+  #print-header h1 { font-family: 'Playfair Display', serif; font-size: 26px; color: #3E2010; margin-bottom: 4px; }
+  #print-header .print-sub { color: #9A8C7A; font-size: 13px; }
+  #print-header .print-date { color: #9A8C7A; font-size: 11px; margin-top: 4px; }
+
+  #btn-export {
+    background: #2C6E2C;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; gap: 5px;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  #btn-export:hover { background: #3A8C3A; }
+
+  /* ── Bottom nav bar mobile ── */
+  #bottom-nav {
+    display: none;
+    background: var(--dark);
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 8px 0 env(safe-area-inset-bottom, 8px);
+  }
+  @media (max-width: 640px) {
+    #bottom-nav { display: flex; }
+  }
+  .bottom-nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--gray);
+    font-size: 10px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 4px 0;
+    transition: color .15s;
+  }
+  .bottom-nav-btn .icon { font-size: 20px; }
+  .bottom-nav-btn.active { color: var(--caramel); }
+
+  /* Section wrapper */
+  .section-block { margin-bottom: 28px; }
+</style>
+</head>
+<body>
+
+<!-- Notification -->
+<div id="notif">✓ Sauvegardé</div>
+
+<!-- Toggle sidebar -->
+<button id="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+<!-- App -->
+<div id="app">
+  <!-- Overlay -->
+  <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="collapsed">
+    <div class="sidebar-header">
+      <div class="sidebar-title">🥐 Mes Recettes</div>
+      <div class="sidebar-count" id="sidebar-count">0 recette</div>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="search-input" placeholder="Rechercher…" oninput="filterRecipes()" autocomplete="off">
+      </div>
+    </div>
+    <button id="btn-new" onclick="newRecipe()">＋ Nouvelle recette</button>
+    <div id="recipe-list"></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main">
+
+    <!-- ÉCRAN ACCUEIL -->
+    <div class="screen active" id="screen-home">
+      <div class="hero">
+        <div class="hero-icon">🍞</div>
+        <h1>Cahier de Recettes</h1>
+        <p>Boulangerie &amp; Pâtisserie</p>
+      </div>
+      <div class="stats-grid" id="home-stats"></div>
+      <div id="home-cats-block" class="section-block" style="display:none">
+        <div class="section-title">Catégories</div>
+        <div class="cats-wrap" id="home-cats"></div>
+      </div>
+      <div id="home-recent-block" class="section-block" style="display:none">
+        <div class="section-title">Recettes récentes</div>
+        <div class="recent-grid" id="home-recent"></div>
+      </div>
+      <div id="home-empty" class="empty-state" style="display:none">
+        <p>Commencez par créer votre première recette !</p>
+        <button class="btn-primary" onclick="newRecipe()">＋ Créer une recette</button>
+      </div>
+    </div>
+
+    <!-- ÉCRAN APERÇU -->
+    <div class="screen" id="screen-view">
+      <div class="nav-bar">
+        <button class="btn-back" onclick="goHome()">← Retour</button>
+        <div class="nav-title" id="view-title"></div>
+        <button class="btn-secondary" onclick="editCurrent()">✏️ Modifier</button>
+        <button class="btn-primary" onclick="calcCurrent()">🧮 Calculer</button>
+      </div>
+      <div id="view-cat"></div>
+      <div class="section-block">
+        <div class="section-title" id="view-ing-title">Ingrédients</div>
+        <div id="view-ing-table"></div>
+      </div>
+      <div id="view-notes-block" class="section-block" style="display:none">
+        <div class="section-title">Notes &amp; Instructions</div>
+        <div class="notes-box" id="view-notes"></div>
+      </div>
+    </div>
+
+    <!-- ÉCRAN ÉDITEUR -->
+    <div class="screen" id="screen-edit">
+      <div class="nav-bar">
+        <button class="btn-back" onclick="cancelEdit()">← Annuler</button>
+        <div class="nav-title">Éditeur</div>
+        <button class="btn-primary" onclick="saveRecipe()">💾 Sauvegarder</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nom de la recette</label>
+        <input class="form-input big" type="text" id="edit-name" placeholder="Ex : Brioche viennoise…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Catégorie</label>
+        <input class="form-input" type="text" id="edit-cat" placeholder="Ex : Viennoiserie, Pain, Entremets…" list="cat-suggestions">
+        <datalist id="cat-suggestions"></datalist>
+      </div>
+      <div class="section-block">
+        <div class="section-title" id="edit-ing-title">Ingrédients — Total : 0 g</div>
+        <div id="ing-editor"></div>
+        <button id="btn-add-ing" onclick="addIngredient()">＋ Ajouter un ingrédient &nbsp;<span style="font-size:11px;opacity:.7">(ou Entrée)</span></button>
+        <div class="total-bar" id="edit-total-bar" style="display:none">
+          <span class="total-bar-label">TOTAL</span>
+          <span class="total-bar-val" id="edit-total">0 g</span>
+        </div>
+      </div>
+      <div class="section-block">
+        <div class="section-title">Notes &amp; Instructions</div>
+        <textarea class="form-input" id="edit-notes" rows="5" placeholder="Instructions, températures, temps de repos…"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px">
+        <button class="btn-primary" onclick="saveRecipe()">💾 Sauvegarder</button>
+      </div>
+    </div>
+
+    <!-- ÉCRAN CALCULATEUR -->
+    <div class="screen" id="screen-calc">
+      <!-- En-tête visible uniquement à l'impression -->
+      <div id="print-header">
+        <h1 id="print-recipe-name"></h1>
+        <div class="print-sub" id="print-recipe-sub"></div>
+        <div class="print-date" id="print-date"></div>
+      </div>
+      <div class="nav-bar">
+        <button class="btn-back" onclick="showView(currentId)">← Retour</button>
+        <div class="nav-title">Calculateur</div>
+        <button id="btn-export" onclick="exportPDF()">📄 Exporter PDF</button>
+      </div>
+      <div class="calc-recipe-card">
+        <div class="calc-recipe-name" id="calc-name"></div>
+        <div class="calc-recipe-meta" id="calc-meta"></div>
+      </div>
+      <div class="target-group">
+        <label class="form-label">Quantité totale souhaitée (grammes)</label>
+        <div class="target-input-wrap">
+          <input class="form-input" type="number" id="calc-target" min="0" placeholder="Saisir le grammage…" oninput="updateCalc()" style="padding-right:40px">
+          <span class="target-unit" id="target-unit-pos">g</span>
+          <div class="factor-badge" id="factor-badge" style="display:none">× 1.0000</div>
+        </div>
+        <div class="quick-btns" id="quick-btns"></div>
+      </div>
+      <div class="calc-table">
+        <div class="calc-header">
+          <span>Ingrédient</span>
+          <span>Base (g)</span>
+          <span id="calc-result-header">Calculé (g)</span>
+        </div>
+        <div id="calc-rows"></div>
+        <div class="calc-row total-row">
+          <span>TOTAL</span>
+          <span class="base-col" id="calc-total-base">—</span>
+          <span class="result-col" id="calc-total-result">—</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Bottom nav (mobile) -->
+<div id="bottom-nav">
+  <button class="bottom-nav-btn active" id="bnav-home" onclick="goHome()"><span class="icon">🏠</span>Accueil</button>
+  <button class="bottom-nav-btn" id="bnav-list" onclick="toggleSidebar()"><span class="icon">📖</span>Recettes</button>
+  <button class="bottom-nav-btn" id="bnav-new" onclick="newRecipe()"><span class="icon">＋</span>Nouvelle</button>
+  <button class="bottom-nav-btn" id="bnav-calc" onclick="if(currentId) calcCurrent()"><span class="icon">🧮</span>Calculer</button>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'boulangerie_v2';
+let recipes = [];
+let currentId = null;
+let editId = null;
+let sidebarOpen = false;
+let searchQuery = '';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) recipes = JSON.parse(raw);
+  } catch(e) { recipes = []; }
+}
+
+function saveData() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes)); } catch(e) {}
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function totalOf(ingredients) {
+  return ingredients.reduce((s,i) => s + (parseFloat(i.qty)||0), 0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+let notifTimer = null;
+function notify(msg, isError=false) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.className = isError ? 'error show' : 'show';
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => el.className = isError ? 'error' : '', 2800);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREENS
+// ─────────────────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.getElementById('main').scrollTop = 0;
+  // bottom nav
+  ['home','list','new','calc'].forEach(k => {
+    const b = document.getElementById('bnav-'+k);
+    if(b) b.classList.remove('active');
+  });
+  if(id==='home') document.getElementById('bnav-home').classList.add('active');
+  if(id==='calc') document.getElementById('bnav-calc').classList.add('active');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const toggle = document.getElementById('sidebar-toggle');
+  if(sidebarOpen) {
+    sidebar.classList.remove('collapsed');
+    overlay.classList.add('visible');
+    toggle.textContent = '✕';
+  } else {
+    sidebar.classList.add('collapsed');
+    overlay.classList.remove('visible');
+    toggle.textContent = '☰';
+  }
+}
+
+function closeSidebar() {
+  if(sidebarOpen) toggleSidebar();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER SIDEBAR
+// ─────────────────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const q = searchQuery.toLowerCase();
+  const filtered = recipes.filter(r =>
+    r.name.toLowerCase().includes(q) || (r.cat||'').toLowerCase().includes(q)
+  );
+
+  const count = recipes.length;
+  document.getElementById('sidebar-count').textContent =
+    count + ' recette' + (count!==1?'s':'');
+
+  const list = document.getElementById('recipe-list');
+  if(filtered.length === 0) {
+    list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--gray);font-size:13px;">' +
+      (q ? 'Aucun résultat' : 'Aucune recette') + '</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(r => {
+    const tot = totalOf(r.ingredients);
+    const active = r.id === currentId ? ' active' : '';
+    return `<div class="recipe-item${active}" data-id="${r.id}">
+      <div class="recipe-item-info" onclick="showView('${r.id}')">
+        <div class="recipe-item-name">${escHtml(r.name)}</div>
+        <div class="recipe-item-meta">
+          ${r.cat ? `<span>${escHtml(r.cat)}</span>` : ''}
+          <span>${r.ingredients.length} ingr.</span>
+          <span class="meta-total">${tot.toFixed(0)}g</span>
+        </div>
+      </div>
+      <div class="item-btns">
+        <button class="item-btn" title="Modifier" onclick="event.stopPropagation();editRecipe('${r.id}')">✏️</button>
+        <button class="item-btn calc" title="Calculer" onclick="event.stopPropagation();showCalc('${r.id}')">🧮</button>
+        <button class="item-btn del" title="Supprimer" onclick="event.stopPropagation();deleteRecipe('${r.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterRecipes() {
+  searchQuery = document.getElementById('search-input').value;
+  renderSidebar();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HOME SCREEN
+// ─────────────────────────────────────────────────────────────────────────────
+function renderHome() {
+  const total = recipes.length;
+  const totalIng = recipes.reduce((s,r) => s+r.ingredients.length, 0);
+  const cats = new Set(recipes.map(r=>r.cat).filter(Boolean));
+
+  document.getElementById('home-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-icon">📖</div><div class="stat-val">${total}</div><div class="stat-lbl">Recettes</div></div>
+    <div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-val">${totalIng}</div><div class="stat-lbl">Ingrédients</div></div>
+    <div class="stat-card"><div class="stat-icon">🗂️</div><div class="stat-val">${cats.size}</div><div class="stat-lbl">Catégories</div></div>
+  `;
+
+  const catBlock = document.getElementById('home-cats-block');
+  if(cats.size > 0) {
+    catBlock.style.display = '';
+    const catCount = {};
+    recipes.forEach(r => { const c=r.cat||''; if(c) catCount[c]=(catCount[c]||0)+1; });
+    document.getElementById('home-cats').innerHTML =
+      Object.entries(catCount).sort((a,b)=>b[1]-a[1]).slice(0,10)
+        .map(([c,n]) => `<div class="cat-tag">${escHtml(c)} <span>(${n})</span></div>`).join('');
+  } else catBlock.style.display = 'none';
+
+  const recentBlock = document.getElementById('home-recent-block');
+  const emptyBlock = document.getElementById('home-empty');
+  if(recipes.length > 0) {
+    recentBlock.style.display = '';
+    emptyBlock.style.display = 'none';
+    const recent = [...recipes].reverse().slice(0,8);
+    document.getElementById('home-recent').innerHTML = recent.map(r => `
+      <div class="recent-card" onclick="showView('${r.id}')">
+        <div class="recent-card-name">${escHtml(r.name)}</div>
+        ${r.cat ? `<div class="recent-card-cat">${escHtml(r.cat)}</div>` : ''}
+        <div class="recent-card-total">${totalOf(r.ingredients).toFixed(0)} g total</div>
+      </div>`).join('');
+  } else {
+    recentBlock.style.display = 'none';
+    emptyBlock.style.display = 'block';
+  }
+}
+
+function goHome() {
+  currentId = null;
+  renderHome();
+  renderSidebar();
+  showScreen('home');
+  closeSidebar();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VIEW SCREEN
+// ─────────────────────────────────────────────────────────────────────────────
+function showView(id) {
+  const r = recipes.find(x=>x.id===id);
+  if(!r) return;
+  currentId = id;
+  renderSidebar();
+
+  document.getElementById('view-title').textContent = r.name;
+  const catEl = document.getElementById('view-cat');
+  catEl.innerHTML = r.cat ? `<div class="recipe-cat-badge">${escHtml(r.cat)}</div>` : '';
+
+  const tot = totalOf(r.ingredients);
+  document.getElementById('view-ing-title').textContent =
+    `Ingrédients — ${r.ingredients.length} · Total : ${tot.toFixed(1)} g`;
+
+  const tableEl = document.getElementById('view-ing-table');
+  if(r.ingredients.length === 0) {
+    tableEl.innerHTML = '<p style="color:var(--gray);font-style:italic;font-size:14px;">Aucun ingrédient.</p>';
+  } else {
+    tableEl.innerHTML = '<div class="ing-table">' +
+      r.ingredients.map((ing,i) => `
+        <div class="ing-row">
+          <span class="ing-name">${escHtml(ing.name)||'<em style="color:var(--gray)">Sans nom</em>'}</span>
+          <span class="ing-qty">${(parseFloat(ing.qty)||0).toFixed(1)} g</span>
+        </div>`).join('') +
+      `<div class="ing-row total-row">
+        <span class="ing-name">TOTAL</span>
+        <span class="ing-qty">${tot.toFixed(1)} g</span>
+      </div></div>`;
+  }
+
+  const notesBlock = document.getElementById('view-notes-block');
+  if(r.notes && r.notes.trim()) {
+    notesBlock.style.display = '';
+    document.getElementById('view-notes').textContent = r.notes;
+  } else notesBlock.style.display = 'none';
+
+  showScreen('view');
+  closeSidebar();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EDITOR
+// ─────────────────────────────────────────────────────────────────────────────
+let editIngredients = [];
+
+function newRecipe() {
+  const r = { id: uid(), name: 'Nouvelle recette', cat: '', notes: '', ingredients: [], created: Date.now() };
+  recipes.push(r);
+  saveData();
+  editRecipe(r.id);
+  closeSidebar();
+}
+
+function editCurrent() { if(currentId) editRecipe(currentId); }
+
+function editRecipe(id) {
+  const r = recipes.find(x=>x.id===id);
+  if(!r) return;
+  editId = id;
+  currentId = id;
+  editIngredients = r.ingredients.map(i=>({...i}));
+
+  document.getElementById('edit-name').value = r.name;
+  document.getElementById('edit-cat').value = r.cat||'';
+  document.getElementById('edit-notes').value = r.notes||'';
+
+  // Suggestions catégories
+  const cats = [...new Set(recipes.map(r=>r.cat).filter(Boolean))];
+  document.getElementById('cat-suggestions').innerHTML = cats.map(c=>`<option value="${escHtml(c)}">`).join('');
+
+  renderIngEditor();
+  updateEditTotal();
+  showScreen('edit');
+  closeSidebar();
+}
+
+function renderIngEditor() {
+  const el = document.getElementById('ing-editor');
+  el.innerHTML = editIngredients.map((ing,i) => `
+    <div class="ing-editor-row" id="ing-row-${ing.id}">
+      <input class="form-input" type="text" value="${escAttr(ing.name)}"
+        placeholder="Ingrédient ${i+1}"
+        onchange="editIngredients[${i}].name=this.value"
+        onkeydown="ingKeyDown(event,${i})">
+      <div class="qty-wrap">
+        <input class="form-input" type="number" min="0" step="0.1" value="${ing.qty||''}"
+          placeholder="0"
+          oninput="editIngredients[${i}].qty=this.value;updateEditTotal()"
+          onkeydown="ingKeyDown(event,${i})">
+        <span class="qty-unit">g</span>
+      </div>
+      <button class="del-ing-btn" onclick="removeIngredient(${i})" title="Supprimer">✕</button>
+    </div>`).join('');
+}
+
+function addIngredient(focusLast=true) {
+  editIngredients.push({id:uid(), name:'', qty:''});
+  renderIngEditor();
+  updateEditTotal();
+  if(focusLast) {
+    setTimeout(()=>{
+      const rows = document.querySelectorAll('.ing-editor-row input[type=text]');
+      if(rows.length) rows[rows.length-1].focus();
+    },30);
+  }
+}
+
+function removeIngredient(i) {
+  editIngredients.splice(i,1);
+  renderIngEditor();
+  updateEditTotal();
+}
+
+function ingKeyDown(e, i) {
+  if(e.key==='Enter') { e.preventDefault(); addIngredient(); }
+}
+
+function updateEditTotal() {
+  const tot = editIngredients.reduce((s,i)=>s+(parseFloat(i.qty)||0),0);
+  document.getElementById('edit-ing-title').textContent =
+    `Ingrédients — Total : ${tot.toFixed(1)} g`;
+  const bar = document.getElementById('edit-total-bar');
+  bar.style.display = editIngredients.length ? 'flex' : 'none';
+  document.getElementById('edit-total').textContent = tot.toFixed(1)+' g';
+}
+
+function saveRecipe() {
+  const name = document.getElementById('edit-name').value.trim() || 'Sans titre';
+  const cat = document.getElementById('edit-cat').value.trim();
+  const notes = document.getElementById('edit-notes').value;
+
+  const idx = recipes.findIndex(x=>x.id===editId);
+  if(idx<0) return;
+  recipes[idx] = { ...recipes[idx], name, cat, notes, ingredients: editIngredients.map(i=>({...i})) };
+  saveData();
+  renderSidebar();
+  notify('✓ Recette sauvegardée !');
+  showView(editId);
+}
+
+function cancelEdit() {
+  // If recipe was just created and has no name yet, remove it
+  const r = recipes.find(x=>x.id===editId);
+  if(r && r.name==='Nouvelle recette' && r.ingredients.length===0 && !r.notes) {
+    recipes = recipes.filter(x=>x.id!==editId);
+    saveData();
+    renderSidebar();
+    goHome();
+  } else if(currentId) {
+    showView(currentId);
+  } else goHome();
+}
+
+function deleteRecipe(id) {
+  const r = recipes.find(x=>x.id===id);
+  if(!r) return;
+  if(!confirm(`Supprimer "${r.name}" ?`)) return;
+  recipes = recipes.filter(x=>x.id!==id);
+  saveData();
+  if(currentId===id) { currentId=null; goHome(); }
+  renderSidebar();
+  notify('Recette supprimée.');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALCULATEUR
+// ─────────────────────────────────────────────────────────────────────────────
+let calcId = null;
+
+function calcCurrent() { if(currentId) showCalc(currentId); }
+
+function showCalc(id) {
+  const r = recipes.find(x=>x.id===id);
+  if(!r) return;
+  calcId = id;
+  currentId = id;
+  renderSidebar();
+
+  const tot = totalOf(r.ingredients);
+  document.getElementById('calc-name').textContent = r.name;
+  document.getElementById('calc-meta').innerHTML =
+    (r.cat ? `<strong>${escHtml(r.cat)}</strong> · ` : '') +
+    `Base : <strong>${tot.toFixed(1)} g</strong> — ${r.ingredients.length} ingrédient${r.ingredients.length!==1?'s':''}`;
+
+  document.getElementById('calc-target').value = '';
+  document.getElementById('factor-badge').style.display = 'none';
+  document.getElementById('calc-result-header').textContent = 'Calculé (g)';
+
+  // Quick buttons
+  const qb = document.getElementById('quick-btns');
+  qb.innerHTML = [0.5,1,2,3,5].map(m => {
+    const v = (tot*m).toFixed(0);
+    return `<button class="quick-btn" onclick="setTarget(${v})">${v} g</button>`;
+  }).join('');
+
+  // Rows
+  renderCalcRows(r, null);
+
+  // Total base
+  document.getElementById('calc-total-base').textContent = tot.toFixed(1)+' g';
+  document.getElementById('calc-total-result').textContent = '—';
+
+  showScreen('calc');
+  closeSidebar();
+}
+
+function setTarget(v) {
+  document.getElementById('calc-target').value = v;
+  updateCalc();
+  document.querySelectorAll('.quick-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent)===v);
+  });
+}
+
+function updateCalc() {
+  const r = recipes.find(x=>x.id===calcId);
+  if(!r) return;
+  const tot = totalOf(r.ingredients);
+  const cible = parseFloat(document.getElementById('calc-target').value);
+  const valid = cible > 0 && tot > 0;
+  const factor = valid ? cible/tot : null;
+
+  const badge = document.getElementById('factor-badge');
+  if(valid) {
+    badge.style.display = '';
+    badge.textContent = '× '+(factor.toFixed(4));
+    document.getElementById('calc-result-header').textContent = `Pour ${cible.toFixed(0)} g`;
+  } else {
+    badge.style.display = 'none';
+    document.getElementById('calc-result-header').textContent = 'Calculé (g)';
+  }
+
+  renderCalcRows(r, factor);
+  document.getElementById('calc-total-result').textContent =
+    valid ? cible.toFixed(1)+' g' : '—';
+  document.getElementById('calc-total-result').className =
+    'result-col' + (valid?' highlight':'');
+
+  // Update quick btns
+  document.querySelectorAll('.quick-btn').forEach(b => {
+    b.classList.toggle('active', cible && parseInt(b.textContent)===Math.round(cible));
+  });
+}
+
+function renderCalcRows(r, factor) {
+  document.getElementById('calc-rows').innerHTML = r.ingredients.map((ing,i) => {
+    const base = parseFloat(ing.qty)||0;
+    const calc = factor!==null ? base*factor : null;
+    return `<div class="calc-row">
+      <span>${escHtml(ing.name)||'<em style="color:var(--gray)">—</em>'}</span>
+      <span class="base-col">${base.toFixed(1)}</span>
+      <span class="result-col${calc!==null?' highlight':''}">${calc!==null ? calc.toFixed(1)+' g' : '—'}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function exportPDF() {
+  const r = recipes.find(x=>x.id===calcId);
+  if(!r) return;
+  const cible = parseFloat(document.getElementById('calc-target').value);
+  const tot = totalOf(r.ingredients);
+
+  // Remplir l'en-tête d'impression
+  document.getElementById('print-recipe-name').textContent = r.name;
+  const sub = [];
+  if(r.cat) sub.push(r.cat);
+  sub.push(`Base : ${tot.toFixed(1)} g`);
+  if(cible > 0) sub.push(`→ Calculé pour : ${cible.toFixed(1)} g`);
+  document.getElementById('print-recipe-sub').textContent = sub.join(' · ');
+  const now = new Date();
+  document.getElementById('print-date').textContent =
+    'Imprimé le ' + now.toLocaleDateString('fr-CH', {day:'2-digit',month:'long',year:'numeric'}) +
+    ' à ' + now.toLocaleTimeString('fr-CH', {hour:'2-digit',minute:'2-digit'});
+
+  // Titre de la page
+  const oldTitle = document.title;
+  document.title = r.name + (cible>0 ? ` — ${cible.toFixed(0)}g` : '');
+  window.print();
+  document.title = oldTitle;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+loadData();
+renderSidebar();
+renderHome();
+
+// Sidebar open by default on desktop
+if(window.innerWidth > 640) {
+  toggleSidebar();
+}
+</script>
+</body>
+</html>
