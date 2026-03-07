@@ -13,20 +13,46 @@
   --cream:#FAF6EF; --parchment:#F2EAD8; --wheat:#E2D0B0;
   --caramel:#C49A3C; --brown:#7B4F2E; --dark:#3E2010;
   --gray:#9A8C7A; --text:#2C1A08; --green:#3A7A2A; --red:#A03020;
+  --sidebar-w: 300px;
 }
 html { font-size:16px; }
 body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--text); min-height:100vh; }
-#topbar { position:sticky; top:0; z-index:100; background:var(--dark); display:flex; align-items:center; gap:10px; padding:10px 16px; min-height:52px; }
+#topbar { position:sticky; top:0; z-index:300; background:var(--dark); display:flex; align-items:center; gap:10px; padding:10px 16px; min-height:52px; }
 #topbar-title { font-family:'Playfair Display',serif; color:var(--wheat); font-size:17px; font-weight:700; flex:1; }
 .tb-btn { background:rgba(255,255,255,.1); border:none; border-radius:8px; color:var(--wheat); padding:7px 13px; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; white-space:nowrap; }
 .tb-btn.accent { background:var(--caramel); }
 .tb-btn.green-btn { background:var(--green); }
-#sync-bar { background:var(--dark); border-top:1px solid rgba(255,255,255,.08); padding:4px 16px; font-size:11px; color:var(--gray); display:flex; align-items:center; gap:6px; }
+#sync-bar { background:var(--dark); border-top:1px solid rgba(255,255,255,.08); padding:4px 16px; font-size:11px; color:var(--gray); display:flex; align-items:center; gap:6px; position:sticky; top:52px; z-index:299; }
 .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--gray); flex-shrink:0; }
 .sync-dot.ok { background:#4CAF50; }
 .sync-dot.loading { background:var(--caramel); animation:pulse 1s infinite; }
 .sync-dot.err { background:var(--red); }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+#sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:400; opacity:0; transition:opacity .25s; }
+#sidebar-overlay.open { display:block; opacity:1; }
+#sidebar { position:fixed; top:0; left:0; bottom:0; width:var(--sidebar-w); background:var(--dark); z-index:500; display:flex; flex-direction:column; transform:translateX(calc(-1 * var(--sidebar-w))); transition:transform .28s cubic-bezier(.4,0,.2,1); box-shadow:4px 0 24px rgba(0,0,0,.35); }
+#sidebar.open { transform:translateX(0); }
+.sb-header { padding:18px 16px 12px; border-bottom:1px solid rgba(255,255,255,.08); }
+.sb-title { font-family:'Playfair Display',serif; color:var(--wheat); font-size:18px; font-weight:700; margin-bottom:2px; }
+.sb-count { color:var(--gray); font-size:12px; margin-bottom:10px; }
+.sb-search { position:relative; }
+.sb-search input { width:100%; padding:7px 10px 7px 32px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); border-radius:8px; color:var(--wheat); font-size:13px; font-family:'DM Sans',sans-serif; outline:none; }
+.sb-search input::placeholder { color:var(--gray); }
+.sb-search-icon { position:absolute; left:9px; top:50%; transform:translateY(-50%); font-size:13px; pointer-events:none; }
+.sb-close { position:absolute; top:14px; right:14px; background:rgba(255,255,255,.08); border:none; border-radius:50%; width:30px; height:30px; color:var(--wheat); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
+#sb-new-btn { margin:8px 12px 4px; padding:9px; background:var(--caramel); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:700; font-size:13px; font-family:'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:5px; }
+#sb-list { flex:1; overflow-y:auto; overflow-x:hidden; }
+.sb-item { display:flex; align-items:center; gap:6px; padding:0 10px; height:64px; border-left:3px solid transparent; cursor:pointer; transition:background .15s; }
+.sb-item:hover { background:rgba(255,255,255,.05); }
+.sb-item.active { background:rgba(196,154,60,.18); border-left-color:var(--caramel); }
+.sb-item-info { flex:1; min-width:0; }
+.sb-item-name { color:#D8CAB0; font-weight:500; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sb-item.active .sb-item-name { color:var(--wheat); font-weight:700; }
+.sb-item-meta { color:var(--gray); font-size:11px; margin-top:2px; display:flex; gap:7px; }
+.sb-meta-g { color:var(--caramel); font-weight:700; }
+.sb-btns { display:flex; gap:3px; flex-shrink:0; }
+.sb-btn { background:rgba(255,255,255,.06); border:none; border-radius:6px; width:26px; height:26px; cursor:pointer; color:var(--gray); display:flex; align-items:center; justify-content:center; font-size:12px; }
+#btn-toc { background:rgba(255,255,255,.1); border:none; border-radius:8px; color:var(--wheat); padding:7px 11px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; white-space:nowrap; }
 .page { display:none; padding:16px 16px 100px; max-width:700px; margin:0 auto; }
 .page.active { display:block; }
 .hero { text-align:center; padding:24px 0 20px; }
@@ -128,7 +154,22 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   <div class="p-date" id="pz-date"></div>
   <div id="pz-table"></div>
 </div>
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div id="sidebar">
+  <button class="sb-close" onclick="closeSidebar()">✕</button>
+  <div class="sb-header">
+    <div class="sb-title">📋 Table des matières</div>
+    <div class="sb-count" id="sb-count">0 recette</div>
+    <div class="sb-search">
+      <span class="sb-search-icon">🔍</span>
+      <input type="search" id="sb-search" placeholder="Rechercher…" oninput="renderSidebar()" autocomplete="off">
+    </div>
+  </div>
+  <button id="sb-new-btn" onclick="newRecipe();closeSidebar()">＋ Nouvelle recette</button>
+  <div id="sb-list"></div>
+</div>
 <div id="topbar">
+  <button id="btn-toc" onclick="openSidebar()">☰ Table des matières</button>
   <span id="topbar-title">🥐 Cahier de Recettes</span>
   <div id="topbar-actions"></div>
 </div>
@@ -187,20 +228,31 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   <button class="bnav" id="bn-list" onclick="goTo('list')"><span class="bi">📖</span>Recettes</button>
   <button class="bnav" id="bn-new" onclick="newRecipe()"><span class="bi">＋</span>Nouvelle</button>
   <button class="bnav" id="bn-calc" onclick="calcCurrent()"><span class="bi">🧮</span>Calculer</button>
+  <button class="bnav" onclick="openSidebar()"><span class="bi">☰</span>Index</button>
 </div>
 <script>
 const SUPA_URL='https://bcekjclnhehvzarvybxd.supabase.co';
 const SUPA_KEY='sb_publishable_VJCEE2irWvslY2nXX4jTqQ_WZ_Cbq63';
-async function sbFetch(path,options={}){const res=await fetch(SUPA_URL+path,{...options,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation',...(options.headers||{})}});if(!res.ok){const e=await res.text();throw new Error(e);}const text=await res.text();return text?JSON.parse(text):[];}
-async function getAllRecipes(){return await sbFetch('/rest/v1/recettes?select=*&order=updated_at.desc');}
-async function upsertRecipe(r){return await sbFetch('/rest/v1/recettes',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({id:r.id,nom:r.name,categorie:r.cat||'',notes:r.notes||'',ingredients:r.ings||[],updated_at:new Date().toISOString()})});}
-async function deleteRecipeDB(id){return await sbFetch('/rest/v1/recettes?id=eq.'+id,{method:'DELETE'});}
+async function sbFetch(path,opts={}){const res=await fetch(SUPA_URL+path,{...opts,headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})}});if(!res.ok)throw new Error(await res.text());const t=await res.text();return t?JSON.parse(t):[];}
+async function getAllRecipes(){return sbFetch('/rest/v1/recettes?select=*&order=updated_at.desc');}
+async function upsertRecipe(r){return sbFetch('/rest/v1/recettes',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({id:r.id,nom:r.name,categorie:r.cat||'',notes:r.notes||'',ingredients:r.ings||[],updated_at:new Date().toISOString()})});}
+async function deleteRecipeDB(id){return sbFetch('/rest/v1/recettes?id=eq.'+id,{method:'DELETE'});}
 function dbToLocal(r){return{id:r.id,name:r.nom,cat:r.categorie||'',notes:r.notes||'',ings:r.ingredients||[]};}
 let recipes=[],currentId=null,editId=null,editIngs=[],calcId=null;
 function totalOf(ings){return(ings||[]).reduce((s,i)=>s+(parseFloat(i.q)||0),0);}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function syncStatus(state,msg){document.getElementById('sync-dot').className='sync-dot '+state;document.getElementById('sync-txt').textContent=msg;}
+function syncStatus(st,msg){document.getElementById('sync-dot').className='sync-dot '+st;document.getElementById('sync-txt').textContent=msg;}
+function openSidebar(){renderSidebar();document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-overlay').classList.add('open');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');}
+function renderSidebar(){
+  const q=(document.getElementById('sb-search').value||'').toLowerCase();
+  const filtered=recipes.filter(r=>r.name.toLowerCase().includes(q)||(r.cat||'').toLowerCase().includes(q));
+  document.getElementById('sb-count').textContent=recipes.length+' recette'+(recipes.length!==1?'s':'');
+  const el=document.getElementById('sb-list');
+  if(!filtered.length){el.innerHTML=`<div style="padding:24px;text-align:center;color:var(--gray);font-size:13px;">${q?'Aucun résultat':'Aucune recette'}</div>`;return;}
+  el.innerHTML=filtered.map(r=>`<div class="sb-item${r.id===currentId?' active':''}"><div class="sb-item-info" onclick="showView('${r.id}');closeSidebar()"><div class="sb-item-name">${esc(r.name)}</div><div class="sb-item-meta">${r.cat?`<span>${esc(r.cat)}</span>`:''}<span>${r.ings.length} ingr.</span><span class="sb-meta-g">${totalOf(r.ings).toFixed(0)}g</span></div></div><div class="sb-btns"><button class="sb-btn" onclick="editRecipe('${r.id}');closeSidebar()">✏️</button><button class="sb-btn" onclick="showCalc('${r.id}');closeSidebar()">🧮</button><button class="sb-btn" onclick="delRecipe('${r.id}')">🗑️</button></div></div>`).join('');
+}
 async function init(){syncStatus('loading','Chargement…');try{const data=await getAllRecipes();recipes=data.map(dbToLocal);syncStatus('ok','Synchronisé ✓');renderHome();renderList();goTo('home');}catch(e){syncStatus('err','Erreur de connexion');goTo('home');}}
 const PAGES=['home','list','view','edit','calc'];
 const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur'};
@@ -216,7 +268,7 @@ function addIng(){editIngs.push({id:uid(),n:'',q:''});renderIngRows();updateEdit
 function removeIng(i){editIngs.splice(i,1);renderIngRows();updateEditTotal();}
 function updateEditTotal(){const tot=totalOf(editIngs);document.getElementById('edit-ing-title').textContent=`Ingrédients — Total : ${tot.toFixed(1)} g`;document.getElementById('edit-total-bar').style.display=editIngs.length?'flex':'none';document.getElementById('edit-total-val').textContent=tot.toFixed(1)+' g';}
 async function saveRecipe(){const name=document.getElementById('edit-name').value.trim()||'Sans titre',cat=document.getElementById('edit-cat').value.trim(),notes=document.getElementById('edit-notes').value,idx=recipes.findIndex(x=>x.id===editId);if(idx<0)return;recipes[idx]={...recipes[idx],name,cat,notes,ings:editIngs.map(i=>({...i}))};syncStatus('loading','Sauvegarde…');try{await upsertRecipe(recipes[idx]);syncStatus('ok','Synchronisé ✓');notify('✓ Recette sauvegardée !');}catch(e){syncStatus('err','Erreur sync');}renderHome();renderList();showView(editId);}
-async function delRecipe(id){const r=recipes.find(x=>x.id===id);if(!r||!confirm(`Supprimer "${r.name}" ?`))return;recipes=recipes.filter(x=>x.id!==id);syncStatus('loading','Suppression…');try{await deleteRecipeDB(id);syncStatus('ok','Synchronisé ✓');}catch(e){syncStatus('err','Erreur sync');}if(currentId===id){currentId=null;renderHome();goTo('home');}renderList();notify('Recette supprimée.');}
+async function delRecipe(id){const r=recipes.find(x=>x.id===id);if(!r||!confirm(`Supprimer "${r.name}" ?`))return;recipes=recipes.filter(x=>x.id!==id);syncStatus('loading','Suppression…');try{await deleteRecipeDB(id);syncStatus('ok','Synchronisé ✓');}catch(e){syncStatus('err','Erreur sync');}if(currentId===id){currentId=null;renderHome();goTo('home');}renderList();renderSidebar();notify('Recette supprimée.');}
 function calcCurrent(){if(currentId)showCalc(currentId);else goTo('list');}
 function showCalc(id){const r=recipes.find(x=>x.id===id);if(!r)return;calcId=id;currentId=id;const tot=totalOf(r.ings);document.getElementById('calc-name').textContent=r.name;document.getElementById('calc-meta').innerHTML=(r.cat?`<strong>${esc(r.cat)}</strong> · `:'')+`Base : <strong>${tot.toFixed(1)} g</strong> — ${r.ings.length} ingrédient${r.ings.length!==1?'s':''}`;document.getElementById('calc-target').value='';document.getElementById('factor-pill').style.display='none';document.getElementById('result-table').style.display='none';document.getElementById('result-head-3').textContent='Calculé';document.getElementById('quick-btns').innerHTML=[0.5,1,2,3,5].map(m=>`<button class="qbtn" onclick="setTarget(${(tot*m).toFixed(0)})">${(tot*m).toFixed(0)} g</button>`).join('');document.getElementById('tot-base').textContent=tot.toFixed(1)+' g';document.getElementById('tot-result').textContent='—';renderResultRows(r,null);goTo('calc');}
 function setTarget(v){document.getElementById('calc-target').value=v;updateCalc();}
@@ -224,7 +276,7 @@ function updateCalc(){const r=recipes.find(x=>x.id===calcId);if(!r)return;const 
 function renderResultRows(r,factor){document.getElementById('result-rows').innerHTML=r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor!==null?base*factor:null;return`<div class="result-row"><span class="c1">${esc(ing.n)||'<em style="color:var(--gray)">—</em>'}</span><span class="c2">${base.toFixed(1)}</span><span class="${calc!==null?'c3 hi':'c3'}">${calc!==null?calc.toFixed(1)+' g':'—'}</span></div>`;}).join('');}
 function exportPDF(){const r=recipes.find(x=>x.id===calcId);if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),factor=(cible>0&&tot>0)?cible/tot:null,now=new Date();document.getElementById('pz-name').textContent=r.name;const sub=[];if(r.cat)sub.push(r.cat);sub.push(`Base : ${tot.toFixed(1)} g`);if(factor)sub.push(`→ Calculé pour : ${cible.toFixed(1)} g`);document.getElementById('pz-sub').textContent=sub.join(' · ');document.getElementById('pz-date').textContent='Imprimé le '+now.toLocaleDateString('fr-CH',{day:'2-digit',month:'long',year:'numeric'})+' à '+now.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'});document.getElementById('pz-table').innerHTML=`<div class="result-table"><div class="result-head"><span>Ingrédient</span><span>Base (g)</span><span>${factor?`Pour ${cible.toFixed(0)} g`:'Base (g)'}</span></div>${r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor?base*factor:base;return`<div class="result-row"><span class="c1">${esc(ing.n)||'—'}</span><span class="c2">${base.toFixed(1)}</span><span class="c3 hi">${calc.toFixed(1)} g</span></div>`;}).join('')}<div class="result-row tot-row"><span class="c1">TOTAL</span><span class="c2">${tot.toFixed(1)} g</span><span class="c3">${factor?cible.toFixed(1)+' g':tot.toFixed(1)+' g'}</span></div></div>`;const old=document.title;document.title=r.name+(factor?` — ${cible.toFixed(0)}g`:'');window.print();document.title=old;}
 let notifEl=null,notifTimer=null;
-function notify(msg,err=false){if(!notifEl){notifEl=document.createElement('div');notifEl.style.cssText='position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-60px);color:#fff;padding:9px 22px;border-radius:99px;z-index:9999;font-weight:700;font-size:14px;font-family:DM Sans,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;';document.body.appendChild(notifEl);}notifEl.textContent=msg;notifEl.style.background=err?'#A03020':'#3A7A2A';notifEl.style.transform='translateX(-50%) translateY(0)';clearTimeout(notifTimer);notifTimer=setTimeout(()=>{notifEl.style.transform='translateX(-50%) translateY(-60px)';},2800);}
+function notify(msg,err=false){if(!notifEl){notifEl=document.createElement('div');notifEl.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-60px);color:#fff;padding:9px 22px;border-radius:99px;z-index:9999;font-weight:700;font-size:14px;font-family:DM Sans,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;';document.body.appendChild(notifEl);}notifEl.textContent=msg;notifEl.style.background=err?'#A03020':'#3A7A2A';notifEl.style.transform='translateX(-50%) translateY(0)';clearTimeout(notifTimer);notifTimer=setTimeout(()=>{notifEl.style.transform='translateX(-50%) translateY(-60px)';},2800);}
 init();
 </script>
 </body>
