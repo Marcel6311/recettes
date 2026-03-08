@@ -65,22 +65,21 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .stat-l { font-size:11px; color:var(--gray); margin-top:2px; }
 .section-title { font-family:'Playfair Display',serif; font-size:16px; color:var(--brown); border-bottom:2px solid var(--wheat); padding-bottom:7px; margin:22px 0 12px; }
 .cat-list { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:6px; }
-.cat-pill { background:var(--wheat); border-radius:99px; padding:4px 13px; font-size:12px; color:var(--brown); font-weight:600; cursor:pointer; transition:background .15s; }
+.cat-pill { background:var(--wheat); border-radius:99px; padding:6px 14px; font-size:12px; color:var(--brown); font-weight:600; cursor:pointer; transition:all .15s; user-select:none; }
 .cat-pill:hover { background:var(--caramel); color:#fff; }
-.cat-pill span { color:var(--brown); }
-.cat-pill:hover span { color:#fff; }
+.cat-pill span { opacity:.7; }
 .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
 .card { background:var(--parchment); border:1px solid var(--wheat); border-radius:12px; padding:13px; cursor:pointer; }
 .card-name { font-family:'Playfair Display',serif; font-weight:700; color:var(--dark); font-size:14px; margin-bottom:3px; }
 .card-cat { color:var(--gray); font-size:11px; margin-bottom:5px; }
 .card-total { color:var(--caramel); font-size:12px; font-weight:700; }
 .empty { text-align:center; padding:40px 0; color:var(--gray); font-size:14px; }
-.search-wrap { position:relative; margin-bottom:12px; }
+.search-wrap { position:relative; margin-bottom:8px; }
 .search-wrap input { width:100%; padding:10px 14px 10px 36px; background:var(--parchment); border:1.5px solid var(--wheat); border-radius:10px; font-size:15px; font-family:'DM Sans',sans-serif; color:var(--text); outline:none; }
 .search-wrap input:focus { border-color:var(--caramel); }
 .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:14px; pointer-events:none; }
-.filter-bar { display:flex; align-items:center; gap:8px; margin-bottom:10px; background:var(--parchment); border:1px solid var(--caramel); border-radius:10px; padding:8px 12px; font-size:13px; color:var(--brown); font-weight:600; }
-.filter-clear { margin-left:auto; background:none; border:none; color:var(--gray); cursor:pointer; font-size:18px; line-height:1; }
+.filter-bar { display:flex; align-items:center; gap:8px; margin-bottom:10px; background:rgba(196,154,60,.12); border:1.5px solid var(--caramel); border-radius:10px; padding:8px 12px; font-size:13px; color:var(--brown); font-weight:600; }
+.filter-clear { margin-left:auto; background:none; border:none; color:var(--gray); cursor:pointer; font-size:20px; line-height:1; padding:0 2px; }
 .recipe-row { display:flex; align-items:center; gap:8px; padding:12px 14px; background:var(--parchment); border:1px solid var(--wheat); border-radius:12px; margin-bottom:8px; }
 .recipe-row-info { flex:1; min-width:0; cursor:pointer; }
 .recipe-row-name { font-weight:600; font-size:14px; color:var(--dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -189,7 +188,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   <div id="home-empty" class="empty" style="display:none">Aucune recette.<br><br><button class="tb-btn accent" onclick="newRecipe()" style="font-size:15px;padding:10px 20px;">＋ Créer ma première recette</button></div>
 </div>
 <div class="page" id="page-list">
-  <div class="search-wrap"><span class="search-icon">🔍</span><input type="search" id="search-input" placeholder="Rechercher une recette…" oninput="renderList()" autocomplete="off"></div>
+  <div class="search-wrap"><span class="search-icon">🔍</span><input type="search" id="search-input" placeholder="Rechercher une recette…" oninput="onSearch()" autocomplete="off"></div>
   <div id="filter-bar-wrap"></div>
   <div id="recipe-list-content"></div>
 </div>
@@ -243,11 +242,15 @@ async function getAllRecipes(){return sbFetch('/rest/v1/recettes?select=*&order=
 async function upsertRecipe(r){return sbFetch('/rest/v1/recettes',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({id:r.id,nom:r.name,categorie:r.cat||'',notes:r.notes||'',ingredients:r.ings||[],updated_at:new Date().toISOString()})});}
 async function deleteRecipeDB(id){return sbFetch('/rest/v1/recettes?id=eq.'+id,{method:'DELETE'});}
 function dbToLocal(r){return{id:r.id,name:r.nom,cat:r.categorie||'',notes:r.notes||'',ings:r.ingredients||[]};}
+
 let recipes=[],currentId=null,editId=null,editIngs=[],calcId=null,activeFilter=null;
+let catIndex=[];
+
 function totalOf(ings){return(ings||[]).reduce((s,i)=>s+(parseFloat(i.q)||0),0);}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function syncStatus(st,msg){document.getElementById('sync-dot').className='sync-dot '+st;document.getElementById('sync-txt').textContent=msg;}
+
 function openSidebar(){renderSidebar();document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-overlay').classList.add('open');}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');}
 function renderSidebar(){
@@ -255,65 +258,109 @@ function renderSidebar(){
   const filtered=recipes.filter(r=>r.name.toLowerCase().includes(q)||(r.cat||'').toLowerCase().includes(q));
   document.getElementById('sb-count').textContent=recipes.length+' recette'+(recipes.length!==1?'s':'');
   const el=document.getElementById('sb-list');
-  if(!filtered.length){el.innerHTML=`<div style="padding:24px;text-align:center;color:var(--gray);font-size:13px;">${q?'Aucun résultat':'Aucune recette'}</div>`;return;}
-  el.innerHTML=filtered.map(r=>`<div class="sb-item${r.id===currentId?' active':''}"><div class="sb-item-info" onclick="showView('${r.id}');closeSidebar()"><div class="sb-item-name">${esc(r.name)}</div><div class="sb-item-meta">${r.cat?`<span>${esc(r.cat)}</span>`:''}<span>${r.ings.length} ingr.</span><span class="sb-meta-g">${totalOf(r.ings).toFixed(0)}g</span></div></div><div class="sb-btns"><button class="sb-btn" onclick="editRecipe('${r.id}');closeSidebar()">✏️</button><button class="sb-btn" onclick="showCalc('${r.id}');closeSidebar()">🧮</button><button class="sb-btn" onclick="delRecipe('${r.id}')">🗑️</button></div></div>`).join('');
+  if(!filtered.length){el.innerHTML='<div style="padding:24px;text-align:center;color:var(--gray);font-size:13px;">'+(q?'Aucun résultat':'Aucune recette')+'</div>';return;}
+  el.innerHTML=filtered.map(r=>'<div class="sb-item'+(r.id===currentId?' active':'')+'"><div class="sb-item-info" onclick="showView(\''+r.id+'\');closeSidebar()"><div class="sb-item-name">'+esc(r.name)+'</div><div class="sb-item-meta">'+(r.cat?'<span>'+esc(r.cat)+'</span>':'')+'<span>'+r.ings.length+' ingr.</span><span class="sb-meta-g">'+totalOf(r.ings).toFixed(0)+'g</span></div></div><div class="sb-btns"><button class="sb-btn" onclick="editRecipe(\''+r.id+'\');closeSidebar()">✏️</button><button class="sb-btn" onclick="showCalc(\''+r.id+'\');closeSidebar()">🧮</button><button class="sb-btn" onclick="delRecipe(\''+r.id+'\')">🗑️</button></div></div>').join('');
 }
+
 async function init(){syncStatus('loading','Chargement…');try{const data=await getAllRecipes();recipes=data.map(dbToLocal);syncStatus('ok','Synchronisé ✓');renderHome();renderList();goTo('home');}catch(e){syncStatus('err','Erreur de connexion');goTo('home');}}
+
 const PAGES=['home','list','view','edit','calc'];
 const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur'};
 function goTo(name){PAGES.forEach(p=>{document.getElementById('page-'+p).classList.toggle('active',p===name);const bn=document.getElementById('bn-'+p);if(bn)bn.classList.toggle('on',p===name);});document.getElementById('topbar-title').textContent=PAGE_TITLES[name]||PAGE_TITLES.home;renderTopbarActions(name);window.scrollTo(0,0);}
-function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home'||page==='list')el.innerHTML=`<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>`;if(page==='view'&&currentId)el.innerHTML=`<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>`;if(page==='edit')el.innerHTML=`<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>`;if(page==='calc'&&currentId)el.innerHTML=`<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>`;}
+function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home'||page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId)el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId)el.innerHTML='<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';}
 
-function filterBycat(cat){
-  activeFilter=cat;
+/* ── FILTRE CATÉGORIE ── */
+function filterByIdx(i){
+  activeFilter=catIndex[i];
   document.getElementById('search-input').value='';
   goTo('list');
   renderList();
 }
-function clearFilter(){
-  activeFilter=null;
-  document.getElementById('search-input').value='';
-  renderList();
-}
+function clearFilter(){activeFilter=null;renderList();}
+function onSearch(){activeFilter=null;renderList();}
 
 function renderHome(){
   const n=recipes.length,ni=recipes.reduce((s,r)=>s+r.ings.length,0),cats=new Set(recipes.map(r=>r.cat).filter(Boolean));
-  document.getElementById('home-stats').innerHTML=`<div class="stat"><div class="stat-n">${n}</div><div class="stat-l">Recettes</div></div><div class="stat"><div class="stat-n">${ni}</div><div class="stat-l">Ingrédients</div></div><div class="stat"><div class="stat-n">${cats.size}</div><div class="stat-l">Catégories</div></div>`;
+  document.getElementById('home-stats').innerHTML='<div class="stat"><div class="stat-n">'+n+'</div><div class="stat-l">Recettes</div></div><div class="stat"><div class="stat-n">'+ni+'</div><div class="stat-l">Ingrédients</div></div><div class="stat"><div class="stat-n">'+cats.size+'</div><div class="stat-l">Catégories</div></div>';
   const cw=document.getElementById('home-cats-wrap');
-  if(cats.size){const cc={};recipes.forEach(r=>{if(r.cat)cc[r.cat]=(cc[r.cat]||0)+1;});cw.innerHTML=`<div class="section-title">Catégories</div><div class="cat-list">${Object.entries(cc).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`<div class="cat-pill" onclick="filterBycat('${esc(c)}')">${esc(c)} <span>(${n})</span></div>`).join('')}</div>`;}
-  else cw.innerHTML='';
+  if(cats.size){
+    const cc={};recipes.forEach(r=>{if(r.cat)cc[r.cat]=(cc[r.cat]||0)+1;});
+    const sorted=Object.entries(cc).sort((a,b)=>b[1]-a[1]);
+    catIndex=sorted.map(([c])=>c);
+    cw.innerHTML='<div class="section-title">Catégories</div><div class="cat-list" id="cat-list-el"></div>';
+    const cl=document.getElementById('cat-list-el');
+    sorted.forEach(([c,n],i)=>{
+      const btn=document.createElement('div');
+      btn.className='cat-pill';
+      btn.innerHTML=esc(c)+' <span>('+n+')</span>';
+      btn.addEventListener('click',()=>filterByIdx(i));
+      cl.appendChild(btn);
+    });
+  } else cw.innerHTML='';
   document.getElementById('home-empty').style.display=n?'none':'block';
   const rw=document.getElementById('home-recent-wrap');
-  if(n)rw.innerHTML=`<div class="section-title">Recettes récentes</div><div class="card-grid">${recipes.slice(0,8).map(r=>`<div class="card" onclick="showView('${r.id}')"><div class="card-name">${esc(r.name)}</div>${r.cat?`<div class="card-cat">${esc(r.cat)}</div>`:''}<div class="card-total">${totalOf(r.ings).toFixed(0)} g</div></div>`).join('')}</div>`;
-  else rw.innerHTML='';
+  if(n){
+    rw.innerHTML='<div class="section-title">Recettes récentes</div><div class="card-grid" id="card-grid-el"></div>';
+    const cg=document.getElementById('card-grid-el');
+    recipes.slice(0,8).forEach(r=>{
+      const d=document.createElement('div');
+      d.className='card';
+      d.innerHTML='<div class="card-name">'+esc(r.name)+'</div>'+(r.cat?'<div class="card-cat">'+esc(r.cat)+'</div>':'')+'<div class="card-total">'+totalOf(r.ings).toFixed(0)+' g</div>';
+      d.addEventListener('click',()=>showView(r.id));
+      cg.appendChild(d);
+    });
+  } else rw.innerHTML='';
 }
 
 function renderList(){
   const q=(document.getElementById('search-input').value||'').toLowerCase();
   let filtered=recipes;
-  if(activeFilter) filtered=filtered.filter(r=>(r.cat||'')=== activeFilter);
+  if(activeFilter) filtered=filtered.filter(r=>(r.cat||'')===activeFilter);
   if(q) filtered=filtered.filter(r=>r.name.toLowerCase().includes(q)||(r.cat||'').toLowerCase().includes(q));
   const fb=document.getElementById('filter-bar-wrap');
-  fb.innerHTML=activeFilter?`<div class="filter-bar">🏷️ Catégorie : <strong>${esc(activeFilter)}</strong> (${filtered.length})<button class="filter-clear" onclick="clearFilter()">✕</button></div>`:'';
+  if(activeFilter){
+    fb.innerHTML='';
+    const bar=document.createElement('div');
+    bar.className='filter-bar';
+    bar.innerHTML='🏷️ Catégorie : <strong>'+esc(activeFilter)+'</strong> ('+filtered.length+')';
+    const btn=document.createElement('button');
+    btn.className='filter-clear';btn.textContent='✕';
+    btn.addEventListener('click',clearFilter);
+    bar.appendChild(btn);
+    fb.appendChild(bar);
+  } else fb.innerHTML='';
   const el=document.getElementById('recipe-list-content');
-  if(!filtered.length){el.innerHTML=`<div class="empty">${q||activeFilter?'Aucun résultat':'Aucune recette'}</div>`;return;}
-  el.innerHTML=filtered.map(r=>`<div class="recipe-row"><div class="recipe-row-info" onclick="showView('${r.id}')"><div class="recipe-row-name">${esc(r.name)}</div><div class="recipe-row-meta">${r.cat?`<span>${esc(r.cat)}</span>`:''}<span>${r.ings.length} ingr.</span><span class="meta-g">${totalOf(r.ings).toFixed(0)}g</span></div></div><div class="row-btns"><button class="row-btn" onclick="editRecipe('${r.id}')">✏️</button><button class="row-btn" onclick="showCalc('${r.id}')">🧮</button><button class="row-btn" onclick="delRecipe('${r.id}')">🗑️</button></div></div>`).join('');
+  if(!filtered.length){el.innerHTML='<div class="empty">'+(q||activeFilter?'Aucun résultat':'Aucune recette')+'</div>';return;}
+  el.innerHTML='';
+  filtered.forEach(r=>{
+    const row=document.createElement('div');
+    row.className='recipe-row';
+    row.innerHTML='<div class="recipe-row-info"><div class="recipe-row-name">'+esc(r.name)+'</div><div class="recipe-row-meta">'+(r.cat?'<span>'+esc(r.cat)+'</span>':'')+'<span>'+r.ings.length+' ingr.</span><span class="meta-g">'+totalOf(r.ings).toFixed(0)+'g</span></div></div><div class="row-btns"><button class="row-btn">✏️</button><button class="row-btn">🧮</button><button class="row-btn">🗑️</button></div>';
+    row.querySelector('.recipe-row-info').addEventListener('click',()=>showView(r.id));
+    const btns=row.querySelectorAll('.row-btn');
+    btns[0].addEventListener('click',()=>editRecipe(r.id));
+    btns[1].addEventListener('click',()=>showCalc(r.id));
+    btns[2].addEventListener('click',()=>delRecipe(r.id));
+    el.appendChild(row);
+  });
 }
-function showView(id){const r=recipes.find(x=>x.id===id);if(!r)return;currentId=id;const tot=totalOf(r.ings);document.getElementById('view-cat-badge').innerHTML=r.cat?`<div class="badge">${esc(r.cat)}</div>`:'';let ih=`<div class="section-title">Ingrédients — ${r.ings.length} · Total : ${tot.toFixed(1)} g</div>`;if(!r.ings.length)ih+=`<div class="empty">Aucun ingrédient.</div>`;else ih+=`<div class="ing-table">${r.ings.map(i=>`<div class="ing-tr"><span class="ing-n">${esc(i.n)||'<em style="color:var(--gray)">—</em>'}</span><span class="ing-q">${(parseFloat(i.q)||0).toFixed(1)} g</span></div>`).join('')}<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">${tot.toFixed(1)} g</span></div></div>`;document.getElementById('view-ing-section').innerHTML=ih;document.getElementById('view-notes-section').innerHTML=r.notes?`<div class="section-title" style="margin-top:20px">Notes</div><div class="notes-box">${esc(r.notes)}</div>`:'';PAGE_TITLES['view']=r.name;goTo('view');}
+
+function showView(id){const r=recipes.find(x=>x.id===id);if(!r)return;currentId=id;const tot=totalOf(r.ings);document.getElementById('view-cat-badge').innerHTML=r.cat?'<div class="badge">'+esc(r.cat)+'</div>':'';let ih='<div class="section-title">Ingrédients — '+r.ings.length+' · Total : '+tot.toFixed(1)+' g</div>';if(!r.ings.length)ih+='<div class="empty">Aucun ingrédient.</div>';else ih+='<div class="ing-table">'+r.ings.map(i=>'<div class="ing-tr"><span class="ing-n">'+(esc(i.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="ing-q">'+(parseFloat(i.q)||0).toFixed(1)+' g</span></div>').join('')+'<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">'+tot.toFixed(1)+' g</span></div></div>';document.getElementById('view-ing-section').innerHTML=ih;document.getElementById('view-notes-section').innerHTML=r.notes?'<div class="section-title" style="margin-top:20px">Notes</div><div class="notes-box">'+esc(r.notes)+'</div>':'';PAGE_TITLES['view']=r.name;goTo('view');}
+
 function newRecipe(){const r={id:uid(),name:'Nouvelle recette',cat:'',notes:'',ings:[]};recipes.unshift(r);editRecipe(r.id);}
-function editRecipe(id){const r=recipes.find(x=>x.id===id);if(!r)return;editId=id;currentId=id;editIngs=r.ings.map(i=>({...i}));document.getElementById('edit-name').value=r.name;document.getElementById('edit-cat').value=r.cat||'';document.getElementById('edit-notes').value=r.notes||'';const cats=[...new Set(recipes.map(r=>r.cat).filter(Boolean))];document.getElementById('cat-datalist').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');renderIngRows();updateEditTotal();goTo('edit');}
-function renderIngRows(){document.getElementById('ing-editor-rows').innerHTML=editIngs.map((ing,i)=>`<div class="ing-row-edit"><input class="form-input" type="text" value="${esc(ing.n)}" placeholder="Ingrédient ${i+1}" oninput="editIngs[${i}].n=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();addIng();}"><div class="qty-wrap"><input class="form-input" type="number" min="0" step="0.1" value="${ing.q||''}" placeholder="0" oninput="editIngs[${i}].q=this.value;updateEditTotal()" onkeydown="if(event.key==='Enter'){event.preventDefault();addIng();}"><span class="qty-unit">g</span></div><button class="del-btn" onclick="removeIng(${i})">✕</button></div>`).join('');}
+function editRecipe(id){const r=recipes.find(x=>x.id===id);if(!r)return;editId=id;currentId=id;editIngs=r.ings.map(i=>({...i}));document.getElementById('edit-name').value=r.name;document.getElementById('edit-cat').value=r.cat||'';document.getElementById('edit-notes').value=r.notes||'';const cats=[...new Set(recipes.map(r=>r.cat).filter(Boolean))];document.getElementById('cat-datalist').innerHTML=cats.map(c=>'<option value="'+esc(c)+'">').join('');renderIngRows();updateEditTotal();goTo('edit');}
+function renderIngRows(){document.getElementById('ing-editor-rows').innerHTML=editIngs.map((ing,i)=>'<div class="ing-row-edit"><input class="form-input" type="text" value="'+esc(ing.n)+'" placeholder="Ingrédient '+(i+1)+'" oninput="editIngs['+i+'].n=this.value" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addIng();}"><div class="qty-wrap"><input class="form-input" type="number" min="0" step="0.1" value="'+(ing.q||'')+'" placeholder="0" oninput="editIngs['+i+'].q=this.value;updateEditTotal()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addIng();}"><span class="qty-unit">g</span></div><button class="del-btn" onclick="removeIng('+i+')">✕</button></div>').join('');}
 function addIng(){editIngs.push({id:uid(),n:'',q:''});renderIngRows();updateEditTotal();setTimeout(()=>{const inputs=document.querySelectorAll('#ing-editor-rows input[type=text]');if(inputs.length)inputs[inputs.length-1].focus();},30);}
 function removeIng(i){editIngs.splice(i,1);renderIngRows();updateEditTotal();}
-function updateEditTotal(){const tot=totalOf(editIngs);document.getElementById('edit-ing-title').textContent=`Ingrédients — Total : ${tot.toFixed(1)} g`;document.getElementById('edit-total-bar').style.display=editIngs.length?'flex':'none';document.getElementById('edit-total-val').textContent=tot.toFixed(1)+' g';}
+function updateEditTotal(){const tot=totalOf(editIngs);document.getElementById('edit-ing-title').textContent='Ingrédients — Total : '+tot.toFixed(1)+' g';document.getElementById('edit-total-bar').style.display=editIngs.length?'flex':'none';document.getElementById('edit-total-val').textContent=tot.toFixed(1)+' g';}
 async function saveRecipe(){const name=document.getElementById('edit-name').value.trim()||'Sans titre',cat=document.getElementById('edit-cat').value.trim(),notes=document.getElementById('edit-notes').value,idx=recipes.findIndex(x=>x.id===editId);if(idx<0)return;recipes[idx]={...recipes[idx],name,cat,notes,ings:editIngs.map(i=>({...i}))};syncStatus('loading','Sauvegarde…');try{await upsertRecipe(recipes[idx]);syncStatus('ok','Synchronisé ✓');notify('✓ Recette sauvegardée !');}catch(e){syncStatus('err','Erreur sync');}renderHome();renderList();showView(editId);}
-async function delRecipe(id){const r=recipes.find(x=>x.id===id);if(!r||!confirm(`Supprimer "${r.name}" ?`))return;recipes=recipes.filter(x=>x.id!==id);syncStatus('loading','Suppression…');try{await deleteRecipeDB(id);syncStatus('ok','Synchronisé ✓');}catch(e){syncStatus('err','Erreur sync');}if(currentId===id){currentId=null;renderHome();goTo('home');}renderList();renderSidebar();notify('Recette supprimée.');}
+async function delRecipe(id){const r=recipes.find(x=>x.id===id);if(!r||!confirm('Supprimer "'+r.name+'" ?'))return;recipes=recipes.filter(x=>x.id!==id);syncStatus('loading','Suppression…');try{await deleteRecipeDB(id);syncStatus('ok','Synchronisé ✓');}catch(e){syncStatus('err','Erreur sync');}if(currentId===id){currentId=null;renderHome();goTo('home');}renderList();renderSidebar();notify('Recette supprimée.');}
 function calcCurrent(){if(currentId)showCalc(currentId);else goTo('list');}
-function showCalc(id){const r=recipes.find(x=>x.id===id);if(!r)return;calcId=id;currentId=id;const tot=totalOf(r.ings);document.getElementById('calc-name').textContent=r.name;document.getElementById('calc-meta').innerHTML=(r.cat?`<strong>${esc(r.cat)}</strong> · `:'')+`Base : <strong>${tot.toFixed(1)} g</strong> — ${r.ings.length} ingrédient${r.ings.length!==1?'s':''}`;document.getElementById('calc-target').value='';document.getElementById('factor-pill').style.display='none';document.getElementById('result-table').style.display='none';document.getElementById('result-head-3').textContent='Calculé';document.getElementById('quick-btns').innerHTML=[0.5,1,2,3,5].map(m=>`<button class="qbtn" onclick="setTarget(${(tot*m).toFixed(0)})">${(tot*m).toFixed(0)} g</button>`).join('');document.getElementById('tot-base').textContent=tot.toFixed(1)+' g';document.getElementById('tot-result').textContent='—';renderResultRows(r,null);goTo('calc');}
+function showCalc(id){const r=recipes.find(x=>x.id===id);if(!r)return;calcId=id;currentId=id;const tot=totalOf(r.ings);document.getElementById('calc-name').textContent=r.name;document.getElementById('calc-meta').innerHTML=(r.cat?'<strong>'+esc(r.cat)+'</strong> · ':'')+'Base : <strong>'+tot.toFixed(1)+' g</strong> — '+r.ings.length+' ingrédient'+(r.ings.length!==1?'s':'');document.getElementById('calc-target').value='';document.getElementById('factor-pill').style.display='none';document.getElementById('result-table').style.display='none';document.getElementById('result-head-3').textContent='Calculé';document.getElementById('quick-btns').innerHTML=[0.5,1,2,3,5].map(m=>'<button class="qbtn" onclick="setTarget('+(tot*m).toFixed(0)+')">'+(tot*m).toFixed(0)+' g</button>').join('');document.getElementById('tot-base').textContent=tot.toFixed(1)+' g';document.getElementById('tot-result').textContent='—';renderResultRows(r,null);goTo('calc');}
 function setTarget(v){document.getElementById('calc-target').value=v;updateCalc();}
-function updateCalc(){const r=recipes.find(x=>x.id===calcId);if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),valid=cible>0&&tot>0,factor=valid?cible/tot:null,pill=document.getElementById('factor-pill');pill.style.display=valid?'':'none';if(valid)pill.textContent='× '+factor.toFixed(4);document.getElementById('result-table').style.display='';document.getElementById('result-head-3').textContent=valid?`Pour ${cible.toFixed(0)} g`:'Calculé';document.getElementById('tot-result').textContent=valid?cible.toFixed(1)+' g':'—';document.getElementById('tot-result').className=valid?'c3 hi':'c3';document.querySelectorAll('.qbtn').forEach(b=>b.classList.toggle('on',valid&&Math.abs(parseFloat(b.textContent)-cible)<0.5));renderResultRows(r,factor);}
-function renderResultRows(r,factor){document.getElementById('result-rows').innerHTML=r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor!==null?base*factor:null;return`<div class="result-row"><span class="c1">${esc(ing.n)||'<em style="color:var(--gray)">—</em>'}</span><span class="c2">${base.toFixed(1)}</span><span class="${calc!==null?'c3 hi':'c3'}">${calc!==null?calc.toFixed(1)+' g':'—'}</span></div>`;}).join('');}
-function exportPDF(){const r=recipes.find(x=>x.id===calcId);if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),factor=(cible>0&&tot>0)?cible/tot:null,now=new Date();document.getElementById('pz-name').textContent=r.name;const sub=[];if(r.cat)sub.push(r.cat);sub.push(`Base : ${tot.toFixed(1)} g`);if(factor)sub.push(`→ Calculé pour : ${cible.toFixed(1)} g`);document.getElementById('pz-sub').textContent=sub.join(' · ');document.getElementById('pz-date').textContent='Imprimé le '+now.toLocaleDateString('fr-CH',{day:'2-digit',month:'long',year:'numeric'})+' à '+now.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'});document.getElementById('pz-table').innerHTML=`<div class="result-table"><div class="result-head"><span>Ingrédient</span><span>Base (g)</span><span>${factor?`Pour ${cible.toFixed(0)} g`:'Base (g)'}</span></div>${r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor?base*factor:base;return`<div class="result-row"><span class="c1">${esc(ing.n)||'—'}</span><span class="c2">${base.toFixed(1)}</span><span class="c3 hi">${calc.toFixed(1)} g</span></div>`;}).join('')}<div class="result-row tot-row"><span class="c1">TOTAL</span><span class="c2">${tot.toFixed(1)} g</span><span class="c3">${factor?cible.toFixed(1)+' g':tot.toFixed(1)+' g'}</span></div></div>`;const old=document.title;document.title=r.name+(factor?` — ${cible.toFixed(0)}g`:'');window.print();document.title=old;}
+function updateCalc(){const r=recipes.find(x=>x.id===calcId);if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),valid=cible>0&&tot>0,factor=valid?cible/tot:null,pill=document.getElementById('factor-pill');pill.style.display=valid?'':'none';if(valid)pill.textContent='× '+factor.toFixed(4);document.getElementById('result-table').style.display='';document.getElementById('result-head-3').textContent=valid?'Pour '+cible.toFixed(0)+' g':'Calculé';document.getElementById('tot-result').textContent=valid?cible.toFixed(1)+' g':'—';document.getElementById('tot-result').className=valid?'c3 hi':'c3';document.querySelectorAll('.qbtn').forEach(b=>b.classList.toggle('on',valid&&Math.abs(parseFloat(b.textContent)-cible)<0.5));renderResultRows(r,factor);}
+function renderResultRows(r,factor){document.getElementById('result-rows').innerHTML=r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor!==null?base*factor:null;return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="c2">'+base.toFixed(1)+'</span><span class="'+(calc!==null?'c3 hi':'c3')+'">'+(calc!==null?calc.toFixed(1)+' g':'—')+'</span></div>';}).join('');}
+function exportPDF(){const r=recipes.find(x=>x.id===calcId);if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),factor=(cible>0&&tot>0)?cible/tot:null,now=new Date();document.getElementById('pz-name').textContent=r.name;const sub=[];if(r.cat)sub.push(r.cat);sub.push('Base : '+tot.toFixed(1)+' g');if(factor)sub.push('→ Calculé pour : '+cible.toFixed(1)+' g');document.getElementById('pz-sub').textContent=sub.join(' · ');document.getElementById('pz-date').textContent='Imprimé le '+now.toLocaleDateString('fr-CH',{day:'2-digit',month:'long',year:'numeric'})+' à '+now.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'});document.getElementById('pz-table').innerHTML='<div class="result-table"><div class="result-head"><span>Ingrédient</span><span>Base (g)</span><span>'+(factor?'Pour '+cible.toFixed(0)+' g':'Base (g)')+'</span></div>'+r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor?base*factor:base;return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'—')+'</span><span class="c2">'+base.toFixed(1)+'</span><span class="c3 hi">'+calc.toFixed(1)+' g</span></div>';}).join('')+'<div class="result-row tot-row"><span class="c1">TOTAL</span><span class="c2">'+tot.toFixed(1)+' g</span><span class="c3">'+(factor?cible.toFixed(1)+' g':tot.toFixed(1)+' g')+'</span></div></div>';const old=document.title;document.title=r.name+(factor?' — '+cible.toFixed(0)+'g':'');window.print();document.title=old;}
 let notifEl=null,notifTimer=null;
 function notify(msg,err=false){if(!notifEl){notifEl=document.createElement('div');notifEl.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-60px);color:#fff;padding:9px 22px;border-radius:99px;z-index:9999;font-weight:700;font-size:14px;font-family:DM Sans,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;';document.body.appendChild(notifEl);}notifEl.textContent=msg;notifEl.style.background=err?'#A03020':'#3A7A2A';notifEl.style.transform='translateX(-50%) translateY(0)';clearTimeout(notifTimer);notifTimer=setTimeout(()=>{notifEl.style.transform='translateX(-50%) translateY(-60px)';},2800);}
 init();
