@@ -65,8 +65,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .stat-l { font-size:11px; color:var(--gray); margin-top:2px; }
 .section-title { font-family:'Playfair Display',serif; font-size:16px; color:var(--brown); border-bottom:2px solid var(--wheat); padding-bottom:7px; margin:22px 0 12px; }
 .cat-list { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:6px; }
-.cat-pill { background:var(--wheat); border-radius:99px; padding:4px 13px; font-size:12px; color:var(--brown); font-weight:600; }
-.cat-pill span { color:var(--caramel); }
+.cat-pill { background:var(--wheat); border-radius:99px; padding:4px 13px; font-size:12px; color:var(--brown); font-weight:600; cursor:pointer; transition:background .15s; }
+.cat-pill:hover { background:var(--caramel); color:#fff; }
+.cat-pill span { color:var(--brown); }
+.cat-pill:hover span { color:#fff; }
 .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
 .card { background:var(--parchment); border:1px solid var(--wheat); border-radius:12px; padding:13px; cursor:pointer; }
 .card-name { font-family:'Playfair Display',serif; font-weight:700; color:var(--dark); font-size:14px; margin-bottom:3px; }
@@ -77,6 +79,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .search-wrap input { width:100%; padding:10px 14px 10px 36px; background:var(--parchment); border:1.5px solid var(--wheat); border-radius:10px; font-size:15px; font-family:'DM Sans',sans-serif; color:var(--text); outline:none; }
 .search-wrap input:focus { border-color:var(--caramel); }
 .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:14px; pointer-events:none; }
+.filter-bar { display:flex; align-items:center; gap:8px; margin-bottom:10px; background:var(--parchment); border:1px solid var(--caramel); border-radius:10px; padding:8px 12px; font-size:13px; color:var(--brown); font-weight:600; }
+.filter-clear { margin-left:auto; background:none; border:none; color:var(--gray); cursor:pointer; font-size:18px; line-height:1; }
 .recipe-row { display:flex; align-items:center; gap:8px; padding:12px 14px; background:var(--parchment); border:1px solid var(--wheat); border-radius:12px; margin-bottom:8px; }
 .recipe-row-info { flex:1; min-width:0; cursor:pointer; }
 .recipe-row-name { font-weight:600; font-size:14px; color:var(--dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -186,6 +190,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 </div>
 <div class="page" id="page-list">
   <div class="search-wrap"><span class="search-icon">🔍</span><input type="search" id="search-input" placeholder="Rechercher une recette…" oninput="renderList()" autocomplete="off"></div>
+  <div id="filter-bar-wrap"></div>
   <div id="recipe-list-content"></div>
 </div>
 <div class="page" id="page-view">
@@ -238,7 +243,7 @@ async function getAllRecipes(){return sbFetch('/rest/v1/recettes?select=*&order=
 async function upsertRecipe(r){return sbFetch('/rest/v1/recettes',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({id:r.id,nom:r.name,categorie:r.cat||'',notes:r.notes||'',ingredients:r.ings||[],updated_at:new Date().toISOString()})});}
 async function deleteRecipeDB(id){return sbFetch('/rest/v1/recettes?id=eq.'+id,{method:'DELETE'});}
 function dbToLocal(r){return{id:r.id,name:r.nom,cat:r.categorie||'',notes:r.notes||'',ings:r.ingredients||[]};}
-let recipes=[],currentId=null,editId=null,editIngs=[],calcId=null;
+let recipes=[],currentId=null,editId=null,editIngs=[],calcId=null,activeFilter=null;
 function totalOf(ings){return(ings||[]).reduce((s,i)=>s+(parseFloat(i.q)||0),0);}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -258,10 +263,44 @@ const PAGES=['home','list','view','edit','calc'];
 const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur'};
 function goTo(name){PAGES.forEach(p=>{document.getElementById('page-'+p).classList.toggle('active',p===name);const bn=document.getElementById('bn-'+p);if(bn)bn.classList.toggle('on',p===name);});document.getElementById('topbar-title').textContent=PAGE_TITLES[name]||PAGE_TITLES.home;renderTopbarActions(name);window.scrollTo(0,0);}
 function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home'||page==='list')el.innerHTML=`<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>`;if(page==='view'&&currentId)el.innerHTML=`<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>`;if(page==='edit')el.innerHTML=`<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>`;if(page==='calc'&&currentId)el.innerHTML=`<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>`;}
-function renderHome(){const n=recipes.length,ni=recipes.reduce((s,r)=>s+r.ings.length,0),cats=new Set(recipes.map(r=>r.cat).filter(Boolean));document.getElementById('home-stats').innerHTML=`<div class="stat"><div class="stat-n">${n}</div><div class="stat-l">Recettes</div></div><div class="stat"><div class="stat-n">${ni}</div><div class="stat-l">Ingrédients</div></div><div class="stat"><div class="stat-n">${cats.size}</div><div class="stat-l">Catégories</div></div>`;const cw=document.getElementById('home-cats-wrap');if(cats.size){const cc={};recipes.forEach(r=>{if(r.cat)cc[r.cat]=(cc[r.cat]||0)+1;});cw.innerHTML=`<div class="section-title">Catégories</div><div class="cat-list">${Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([c,n])=>`<div class="cat-pill">${esc(c)} <span>(${n})</span></div>`).join('')}</div>`;}else cw.innerHTML='';document.getElementById('home-empty').style.display=n?'none':'block';const rw=document.getElementById('home-recent-wrap');if(n)rw.innerHTML=`<div class="section-title">Recettes récentes</div><div class="card-grid">${recipes.slice(0,8).map(r=>`<div class="card" onclick="showView('${r.id}')"><div class="card-name">${esc(r.name)}</div>${r.cat?`<div class="card-cat">${esc(r.cat)}</div>`:''}<div class="card-total">${totalOf(r.ings).toFixed(0)} g</div></div>`).join('')}</div>`;else rw.innerHTML='';}
-function renderList(){const q=(document.getElementById('search-input').value||'').toLowerCase(),filtered=recipes.filter(r=>r.name.toLowerCase().includes(q)||(r.cat||'').toLowerCase().includes(q)),el=document.getElementById('recipe-list-content');if(!filtered.length){el.innerHTML=`<div class="empty">${q?'Aucun résultat':'Aucune recette'}</div>`;return;}el.innerHTML=filtered.map(r=>`<div class="recipe-row"><div class="recipe-row-info" onclick="showView('${r.id}')"><div class="recipe-row-name">${esc(r.name)}</div><div class="recipe-row-meta">${r.cat?`<span>${esc(r.cat)}</span>`:''}<span>${r.ings.length} ingr.</span><span class="meta-g">${totalOf(r.ings).toFixed(0)}g</span></div></div><div class="row-btns"><button class="row-btn" onclick="editRecipe('${r.id}')">✏️</button><button class="row-btn" onclick="showCalc('${r.id}')">🧮</button><button class="row-btn" onclick="delRecipe('${r.id}')">🗑️</button></div></div>`).join('');}
+
+function filterBycat(cat){
+  activeFilter=cat;
+  document.getElementById('search-input').value='';
+  goTo('list');
+  renderList();
+}
+function clearFilter(){
+  activeFilter=null;
+  document.getElementById('search-input').value='';
+  renderList();
+}
+
+function renderHome(){
+  const n=recipes.length,ni=recipes.reduce((s,r)=>s+r.ings.length,0),cats=new Set(recipes.map(r=>r.cat).filter(Boolean));
+  document.getElementById('home-stats').innerHTML=`<div class="stat"><div class="stat-n">${n}</div><div class="stat-l">Recettes</div></div><div class="stat"><div class="stat-n">${ni}</div><div class="stat-l">Ingrédients</div></div><div class="stat"><div class="stat-n">${cats.size}</div><div class="stat-l">Catégories</div></div>`;
+  const cw=document.getElementById('home-cats-wrap');
+  if(cats.size){const cc={};recipes.forEach(r=>{if(r.cat)cc[r.cat]=(cc[r.cat]||0)+1;});cw.innerHTML=`<div class="section-title">Catégories</div><div class="cat-list">${Object.entries(cc).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`<div class="cat-pill" onclick="filterBycat('${esc(c)}')">${esc(c)} <span>(${n})</span></div>`).join('')}</div>`;}
+  else cw.innerHTML='';
+  document.getElementById('home-empty').style.display=n?'none':'block';
+  const rw=document.getElementById('home-recent-wrap');
+  if(n)rw.innerHTML=`<div class="section-title">Recettes récentes</div><div class="card-grid">${recipes.slice(0,8).map(r=>`<div class="card" onclick="showView('${r.id}')"><div class="card-name">${esc(r.name)}</div>${r.cat?`<div class="card-cat">${esc(r.cat)}</div>`:''}<div class="card-total">${totalOf(r.ings).toFixed(0)} g</div></div>`).join('')}</div>`;
+  else rw.innerHTML='';
+}
+
+function renderList(){
+  const q=(document.getElementById('search-input').value||'').toLowerCase();
+  let filtered=recipes;
+  if(activeFilter) filtered=filtered.filter(r=>(r.cat||'')=== activeFilter);
+  if(q) filtered=filtered.filter(r=>r.name.toLowerCase().includes(q)||(r.cat||'').toLowerCase().includes(q));
+  const fb=document.getElementById('filter-bar-wrap');
+  fb.innerHTML=activeFilter?`<div class="filter-bar">🏷️ Catégorie : <strong>${esc(activeFilter)}</strong> (${filtered.length})<button class="filter-clear" onclick="clearFilter()">✕</button></div>`:'';
+  const el=document.getElementById('recipe-list-content');
+  if(!filtered.length){el.innerHTML=`<div class="empty">${q||activeFilter?'Aucun résultat':'Aucune recette'}</div>`;return;}
+  el.innerHTML=filtered.map(r=>`<div class="recipe-row"><div class="recipe-row-info" onclick="showView('${r.id}')"><div class="recipe-row-name">${esc(r.name)}</div><div class="recipe-row-meta">${r.cat?`<span>${esc(r.cat)}</span>`:''}<span>${r.ings.length} ingr.</span><span class="meta-g">${totalOf(r.ings).toFixed(0)}g</span></div></div><div class="row-btns"><button class="row-btn" onclick="editRecipe('${r.id}')">✏️</button><button class="row-btn" onclick="showCalc('${r.id}')">🧮</button><button class="row-btn" onclick="delRecipe('${r.id}')">🗑️</button></div></div>`).join('');
+}
 function showView(id){const r=recipes.find(x=>x.id===id);if(!r)return;currentId=id;const tot=totalOf(r.ings);document.getElementById('view-cat-badge').innerHTML=r.cat?`<div class="badge">${esc(r.cat)}</div>`:'';let ih=`<div class="section-title">Ingrédients — ${r.ings.length} · Total : ${tot.toFixed(1)} g</div>`;if(!r.ings.length)ih+=`<div class="empty">Aucun ingrédient.</div>`;else ih+=`<div class="ing-table">${r.ings.map(i=>`<div class="ing-tr"><span class="ing-n">${esc(i.n)||'<em style="color:var(--gray)">—</em>'}</span><span class="ing-q">${(parseFloat(i.q)||0).toFixed(1)} g</span></div>`).join('')}<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">${tot.toFixed(1)} g</span></div></div>`;document.getElementById('view-ing-section').innerHTML=ih;document.getElementById('view-notes-section').innerHTML=r.notes?`<div class="section-title" style="margin-top:20px">Notes</div><div class="notes-box">${esc(r.notes)}</div>`:'';PAGE_TITLES['view']=r.name;goTo('view');}
-function newRecipe(){const r={id:uid(),name:'N R',cat:'',notes:'',ings:[]};recipes.unshift(r);editRecipe(r.id);}
+function newRecipe(){const r={id:uid(),name:'Nouvelle recette',cat:'',notes:'',ings:[]};recipes.unshift(r);editRecipe(r.id);}
 function editRecipe(id){const r=recipes.find(x=>x.id===id);if(!r)return;editId=id;currentId=id;editIngs=r.ings.map(i=>({...i}));document.getElementById('edit-name').value=r.name;document.getElementById('edit-cat').value=r.cat||'';document.getElementById('edit-notes').value=r.notes||'';const cats=[...new Set(recipes.map(r=>r.cat).filter(Boolean))];document.getElementById('cat-datalist').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');renderIngRows();updateEditTotal();goTo('edit');}
 function renderIngRows(){document.getElementById('ing-editor-rows').innerHTML=editIngs.map((ing,i)=>`<div class="ing-row-edit"><input class="form-input" type="text" value="${esc(ing.n)}" placeholder="Ingrédient ${i+1}" oninput="editIngs[${i}].n=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();addIng();}"><div class="qty-wrap"><input class="form-input" type="number" min="0" step="0.1" value="${ing.q||''}" placeholder="0" oninput="editIngs[${i}].q=this.value;updateEditTotal()" onkeydown="if(event.key==='Enter'){event.preventDefault();addIng();}"><span class="qty-unit">g</span></div><button class="del-btn" onclick="removeIng(${i})">✕</button></div>`).join('');}
 function addIng(){editIngs.push({id:uid(),n:'',q:''});renderIngRows();updateEditTotal();setTimeout(()=>{const inputs=document.querySelectorAll('#ing-editor-rows input[type=text]');if(inputs.length)inputs[inputs.length-1].focus();},30);}
