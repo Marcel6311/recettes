@@ -376,15 +376,47 @@ function renderIngRows(){
   const container=document.getElementById('ing-editor-rows');
   container.innerHTML='';
   editIngs.forEach((ing,i)=>{
-    // Wrapper autocomplete
     const wrap=document.createElement('div');
     wrap.className='ing-row-edit';
-    wrap.style.position='relative';
 
-    const acWrap=document.createElement('div');
-    acWrap.className='ac-wrap';
-    acWrap.style.flex='1';
+    const nameInput=document.createElement('input');
+    nameInput.className='form-input';
+    nameInput.type='text';
+    nameInput.value=ing.n||'';
+    nameInput.placeholder='Ingrédient '+(i+1);
+    nameInput.style.flex='1';
 
+    const qWrap=document.createElement('div');
+    qWrap.className='qty-wrap';
+    const qInput=document.createElement('input');
+    qInput.className='form-input';
+    qInput.type='number';
+    qInput.min='0';
+    qInput.step='0.1';
+    qInput.value=ing.q||'';
+    qInput.placeholder='0';
+    const qUnit=document.createElement('span');
+    qUnit.className='qty-unit';
+    qUnit.textContent='g';
+    qWrap.appendChild(qInput);
+    qWrap.appendChild(qUnit);
+
+    const delBtn=document.createElement('button');
+    delBtn.className='del-btn';
+    delBtn.textContent='✕';
+
+    wrap.appendChild(nameInput);
+    wrap.appendChild(qWrap);
+    wrap.appendChild(delBtn);
+    container.appendChild(wrap);
+
+    nameInput.addEventListener('input',()=>editIngs[i].n=nameInput.value);
+    nameInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addIng();}});
+    qInput.addEventListener('input',()=>{editIngs[i].q=qInput.value;updateEditTotal();});
+    qInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addIng();}});
+    delBtn.addEventListener('click',()=>removeIng(i));
+  });
+}
     const nameInput=document.createElement('input');
     nameInput.className='form-input';
     nameInput.type='text';
