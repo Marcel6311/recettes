@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b1c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Guide TV">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Guide TV Suisse</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0b1c;--bg2:#0e0e22;--card:#141428;--card2:#1c1c38;--border:rgba(255,255,255,.08);--accent:#FF6635;--live:#00D084;--blue:#4D8EF0;--text:#eeeef8;--text2:#8888aa;--text3:#44445e;--r:13px;--rs:8px;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:'Outfit','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;overflow:hidden}
+button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;border:none;background:none}
+input,textarea{font-family:inherit;-webkit-appearance:none;-webkit-user-select:text!important;user-select:text!important;-webkit-touch-callout:default!important}
+#shell{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+#upd{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s,visibility .5s}
+#upd.gone{opacity:0;visibility:hidden;pointer-events:none}
+.upd-icon{width:80px;height:80px;border-radius:22px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:38px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,102,53,.4)}50%{box-shadow:0 0 0 18px rgba(255,102,53,0)}}
+.upd-t{font-size:24px;font-weight:800}.upd-t em{color:var(--accent);font-style:normal}
+.upd-s{font-size:13px;color:var(--text2);text-align:center;max-width:280px;line-height:1.6}
+.upd-track{width:200px;height:3px;background:var(--card2);border-radius:2px;overflow:hidden}
+.upd-fill{height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .2s linear}
+.upd-ok{font-size:13px;font-weight:700;opacity:0;transition:opacity .4s;text-align:center;max-width:280px}
+.upd-ok.show{opacity:1}
+#topbar{flex-shrink:0;padding-top:var(--safe-t);padding-left:calc(12px + var(--safe-l));padding-right:calc(12px + var(--safe-r));height:calc(54px + var(--safe-t));display:flex;align-items:center;gap:8px;background:var(--bg);border-bottom:1px solid var(--border);z-index:10}
+#btn-back{display:none;width:34px;height:34px;border-radius:var(--rs);background:var(--card2);color:var(--text);font-size:18px;align-items:center;justify-content:center;flex-shrink:0}
+#btn-back.on{display:flex}
+#logo{font-size:19px;font-weight:800;flex:1;letter-spacing:-.3px}
+#logo em{color:var(--accent);font-style:normal}
+#ch-title{display:none;flex:1;font-size:17px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ch-title.on{display:block}
+.tb-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--card2);border-radius:var(--rs);color:var(--text2);font-size:16px;transition:all .18s;flex-shrink:0}
+.tb-btn.on{background:rgba(255,102,53,.2);color:var(--accent)}
+#srch-wrap{flex-shrink:0;max-height:0;overflow:hidden;background:var(--bg2);transition:max-height .28s ease}
+#srch-wrap.open{max-height:52px;border-bottom:1px solid var(--border)}
+#srch-inner{height:52px;display:flex;align-items:center;gap:8px;padding:0 calc(12px + var(--safe-l))}
+#srch-in{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:15px;padding:8px 12px;outline:none;transition:border-color .2s}
+#srch-in:focus{border-color:var(--accent)}
+#srch-in::placeholder{color:var(--text3)}
+#status-bar{flex-shrink:0;height:22px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:6px;font-size:10.5px;color:var(--text2)}
+.st-dot{width:6px;height:6px;border-radius:50%;background:var(--text3)}
+.st-dot.live{background:var(--live)}.st-dot.warn{background:#FFA500}
+#datestrip{flex-shrink:0;height:48px;display:flex;align-items:center;gap:4px;overflow-x:auto;padding:0 calc(10px + var(--safe-l));scrollbar-width:none;background:var(--bg2);border-bottom:1px solid var(--border)}
+#datestrip::-webkit-scrollbar{display:none}
+.dp{flex-shrink:0;padding:4px 12px;border-radius:16px;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;color:var(--text2);border:1px solid transparent;transition:all .16s}
+.dp.past{color:var(--text3)}.dp.today{border-color:var(--accent);color:var(--accent)}
+.dp.sel{background:var(--accent);color:#fff;font-weight:700}
+.dp.past.sel{background:var(--text3);border-color:var(--text3)}
+#content{flex:1;overflow:hidden;position:relative}
+#pane{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:10px;padding-bottom:calc(16px + var(--safe-b));scrollbar-width:thin;scrollbar-color:var(--card2) transparent}
+#pane::-webkit-scrollbar{width:2px}
+#pane::-webkit-scrollbar-thumb{background:var(--card2)}
+.ch-grid{display:flex;flex-direction:column;gap:7px}
+.ch-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;display:flex;align-items:stretch;transition:transform .14s,background .14s}
+.ch-card:active{transform:scale(.982);background:var(--card2)}
+.ch-stripe{width:4px;flex-shrink:0}
+.ch-logo{width:52px;height:52px;flex-shrink:0;margin:9px 0 9px 10px;border-radius:9px;overflow:hidden;background:#fff}
+.ch-logo img{width:100%;height:100%;display:block}
+.ch-body{flex:1;min-width:0;padding:9px 12px 8px}
+.ch-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:3px}
+.ch-show{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-row2{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:12px;color:var(--text2)}
+.live-pill{padding:1px 6px;background:var(--live);color:#000;border-radius:4px;font-size:9.5px;font-weight:800;letter-spacing:.3px}
+.ch-prog{height:2px;background:var(--card2);border-radius:1px;margin:6px 0 3px;overflow:hidden}
+.ch-prog-bar{height:100%;border-radius:1px}
+.ch-nxt{font-size:11.5px;color:var(--text3)}
+.ch-nxt b{color:var(--text2);font-weight:500}
+.real-dot{color:var(--live);font-size:9px;margin-left:2px}
+.sch-hdr{display:flex;align-items:center;gap:12px;padding:0 2px 14px}
+.sch-hlogo{width:48px;height:48px;border-radius:10px;overflow:hidden;flex-shrink:0}
+.sch-hlogo img{width:100%;height:100%;display:block}
+.sch-hname{font-size:18px;font-weight:800}
+.sch-hdate{font-size:12px;color:var(--text2);margin-top:2px}
+.sch-src{font-size:10px;margin-top:2px}
+.sch-src.real{color:var(--live)}.sch-src.local{color:var(--text3);font-style:italic}
+.sch-list{display:flex;flex-direction:column}
+.sch-row{display:flex;align-items:flex-start;gap:10px;padding:12px 4px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;border-radius:var(--rs)}
+.sch-row:last-child{border-bottom:none}
+.sch-row:active{background:var(--card)}
+.sch-row.past{opacity:.35}
+.sch-row.live-row{background:rgba(0,208,132,.05);padding:12px 8px;margin:0 -4px;border-left:3px solid var(--live)}
+.sch-row.live-row .sch-time{color:var(--live)}
+.sch-tcol{width:50px;flex-shrink:0;text-align:right}
+.sch-time{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.sch-tend{font-size:11px;color:var(--text3);margin-top:2px}
+.sch-tl{width:16px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-top:5px}
+.sch-dot{width:9px;height:9px;border-radius:50%;background:var(--card2);border:2px solid var(--text3);flex-shrink:0}
+.sch-dot.live{background:var(--live);border-color:var(--live);box-shadow:0 0 6px var(--live)}
+.sch-line{width:1px;flex:1;min-height:20px;background:var(--border);margin-top:3px}
+.sch-body{flex:1;min-width:0}
+.sch-name{font-size:15px;font-weight:600;line-height:1.3}
+.sch-row.live-row .sch-name{color:var(--live)}
+.sch-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.tag{font-size:11px;padding:2px 7px;border-radius:4px;font-weight:500}
+.tag-live{background:rgba(0,208,132,.15);color:var(--live)}
+.tag-g{background:rgba(77,142,240,.13);color:var(--blue)}
+.tag-d{background:var(--card2);color:var(--text3)}
+.s-empty{display:flex;flex-direction:column;align-items:center;padding:60px 20px;gap:12px;color:var(--text3);text-align:center}
+.s-day{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--text3);padding:14px 2px 6px}
+.s-row{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:11px 13px;margin-bottom:6px;cursor:pointer;transition:background .13s}
+.s-row:active{background:var(--card2)}
+.s-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.s-meta{font-size:12px;color:var(--text2);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.s-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+mark.hl{background:rgba(255,102,53,.25);border-radius:2px;color:inherit;padding:0 1px}
+#modal-bg{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#modal-bg.open{display:block}
+#modal-sheet{position:fixed;bottom:0;left:0;right:0;z-index:101;background:var(--card);border-radius:18px 18px 0 0;border:1px solid rgba(255,255,255,.1);border-bottom:none;max-height:88dvh;overflow-y:auto;transform:translateY(100%);transition:transform .36s cubic-bezier(.32,.72,0,1);padding-bottom:calc(20px + var(--safe-b))}
+#modal-sheet.open{transform:translateY(0)}
+.m-pill{width:34px;height:4px;background:var(--card2);border-radius:2px;margin:10px auto 0}
+.m-top{display:flex;align-items:center;gap:8px;padding:13px 16px 0}
+.m-logo{width:36px;height:36px;border-radius:8px;overflow:hidden;flex-shrink:0}
+.m-logo img{width:100%;height:100%;display:block}
+.m-dt{font-size:12px;color:var(--text2);flex:1}
+.m-close{width:28px;height:28px;background:var(--card2);border-radius:50%;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0}
+.m-title{font-size:20px;font-weight:800;padding:9px 16px 5px;line-height:1.2}
+.m-tags{display:flex;flex-wrap:wrap;gap:4px;padding:0 16px 10px}
+.m-tag{font-size:11.5px;padding:3px 8px;border-radius:5px;background:var(--card2);color:var(--text2)}
+.m-sum{font-size:13.5px;line-height:1.7;color:var(--text2);padding:0 16px 14px}
+.m-div{height:1px;background:var(--border);margin:0 16px 12px}
+.m-sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);padding:0 16px 8px}
+.rerun{display:flex;align-items:center;gap:8px;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+.rerun:last-child{border-bottom:none}
+.rerun:active{background:var(--card2)}
+.rr-d{font-size:12.5px;font-weight:600;width:90px;flex-shrink:0}
+.rr-t{font-size:12.5px;color:var(--text2);width:48px;flex-shrink:0}
+.rr-b{width:28px;height:28px;border-radius:6px;overflow:hidden;flex-shrink:0}
+.rr-b img{width:100%;height:100%;display:block}
+.rr-none{padding:8px 16px 4px;font-size:13px;color:var(--text3)}
+.m-acts{padding:14px 16px 0;display:flex;gap:8px}
+.btn-mail{flex:1;height:46px;background:var(--accent);color:#fff;border-radius:var(--rs);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .16s}
+.btn-mail:active{opacity:.8}
+#sp-bg{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#sp-bg.open{display:block}
+#sp-panel{position:fixed;top:0;right:0;bottom:0;z-index:201;width:min(340px,94vw);background:var(--card);border-left:1px solid rgba(255,255,255,.1);overflow-y:auto;padding-top:var(--safe-t);padding-bottom:calc(24px + var(--safe-b));transform:translateX(100%);transition:transform .36s cubic-bezier(.32,.72,0,1)}
+#sp-panel.open{transform:translateX(0)}
+.sp-h{padding:16px 16px 13px;font-size:18px;font-weight:800;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.sp-x{width:28px;height:28px;background:var(--card2);border-radius:50%;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text)}
+.sp-s{padding:14px 16px;border-bottom:1px solid var(--border)}
+.sp-st{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:9px}
+.sp-lbl{font-size:12px;color:var(--text2);margin-bottom:4px}
+.sp-in{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:13px;padding:9px 11px;outline:none;transition:border-color .2s;margin-bottom:8px;-webkit-user-select:text!important;user-select:text!important}
+.sp-in:focus{border-color:var(--accent)}
+.sp-info{font-size:11px;color:var(--text3);line-height:1.7;margin-top:2px}
+.sb-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:5px;margin-bottom:10px}
+.sb-badge.ok{background:rgba(0,208,132,.15);color:var(--live)}
+.sb-badge.nok{background:rgba(255,100,50,.12);color:var(--accent)}
+.ct-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.ct-row:last-child{border-bottom:none}
+.ct-logo{width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0}
+.ct-logo img{width:100%;height:100%;display:block}
+.ct-arrows{display:flex;flex-direction:column;gap:1px;flex-shrink:0}
+.ct-arrow{width:26px;height:22px;background:var(--card2);border-radius:4px;color:var(--text2);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;font-family:inherit}
+.ct-arrow:active{background:var(--accent);color:#fff}
+.ct-name{font-size:13px;font-weight:600}.ct-cc{font-size:11px;color:var(--text3);margin-top:1px}
+.tgl{width:42px;height:24px;border-radius:12px;background:var(--card2);position:relative;transition:background .2s;flex-shrink:0;border:none}
+.tgl.on{background:var(--accent)}
+.tgl::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tgl.on::after{transform:translateX(18px)}
+.sp-btn{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:13.5px;text-align:left;display:flex;align-items:center;gap:8px;margin-bottom:6px;transition:background .14s}
+.sp-btn:active{background:var(--card2)}
+.sp-btn.red{color:#ff5566}
+.sp-ver{text-align:center;font-size:11px;color:var(--text3);padding:14px}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;gap:8px;color:var(--text3);font-size:14px;text-align:center;padding:20px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fu{animation:fadeUp .22s ease both}
+@media(min-width:600px){.ch-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}}
+@media(min-width:900px){.ch-grid{grid-template-columns:1fr 1fr 1fr}}
+@media(orientation:landscape) and (max-height:480px){.ch-grid{display:grid;grid-template-columns:1fr 1fr}}
+@media(min-width:620px){#modal-sheet{max-width:540px;left:50%;right:auto;transform:translate(-50%,100%);border-radius:18px}#modal-sheet.open{transform:translate(-50%,0)}}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div id="upd">
+    <div class="upd-icon">📺</div>
+    <div class="upd-t">Guide <em>TV</em> Suisse</div>
+    <div class="upd-s" id="upd-msg">Connexion Supabase…</div>
+    <div class="upd-track"><div class="upd-fill" id="upd-fill"></div></div>
+    <div class="upd-ok" id="upd-ok"></div>
+  </div>
+  <header id="topbar">
+    <button id="btn-back" onclick="goBack()">←</button>
+    <div id="logo">Guide <em>TV</em></div>
+    <div id="ch-title"></div>
+    <div style="display:flex;gap:6px">
+      <button class="tb-btn" id="btn-srch" onclick="toggleSearch()">🔍</button>
+      <button class="tb-btn" onclick="openSettings()">⚙️</button>
+    </div>
+  </header>
+  <div id="srch-wrap">
+    <div id="srch-inner">
+      <input type="search" id="srch-in" placeholder="Émission, genre, chaîne…" autocomplete="off" spellcheck="false" oninput="onSearch(this.value)">
+      <button style="width:28px;height:28px;color:var(--text3);font-size:17px;display:flex;align-items:center;justify-content:center" onclick="toggleSearch()">✕</button>
+    </div>
+  </div>
+  <div id="status-bar"><div class="st-dot" id="st-dot"></div><span id="st-txt">Chargement…</span></div>
+  <nav id="datestrip"></nav>
+  <div id="content"><div id="pane"></div></div>
+</div>
+<div id="modal-bg" onclick="closeModal()"></div>
+<div id="modal-sheet">
+  <div class="m-pill"></div>
+  <div class="m-top">
+    <div class="m-logo" id="m-logo"></div>
+    <span class="m-dt" id="m-dt"></span>
+    <button class="m-close" onclick="closeModal()">✕</button>
+  </div>
+  <div class="m-title" id="m-title"></div>
+  <div class="m-tags" id="m-tags"></div>
+  <div class="m-sum" id="m-sum"></div>
+  <div class="m-div"></div>
+  <div class="m-sec">🔁 Rediffusions</div>
+  <div id="m-reruns"></div>
+  <div class="m-acts">
+    <button class="btn-mail" onclick="sendMail()">✉️ &nbsp;E-mail</button>
+    <button class="btn-mail" style="background:var(--blue)" onclick="addToCalendar()">📅 &nbsp;Calendrier</button>
+  </div>
+</div>
+<div id="sp-bg" onclick="closeSettings()"></div>
+<div id="sp-panel">
+  <div class="sp-h">Réglages <button class="sp-x" onclick="closeSettings()">✕</button></div>
+  <div class="sp-s">
+    <div class="sp-st">🗄️ Supabase</div>
+    <div id="sb-badge-wrap"></div>
+    <div class="sp-lbl">URL du projet</div>
+    <input type="url" class="sp-in" id="sp-sb-url" placeholder="https://xxxx.supabase.co" oninput="saveSB()">
+    <div class="sp-lbl">Clé publique (anon)</div>
+    <input type="text" class="sp-in" id="sp-sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…" oninput="saveSB()">
+    <div class="sp-info">Dashboard → Settings → API → Legacy anon key</div>
+  </div>
+  <div class="sp-s">
+    <div class="sp-st">✉️ E-mail</div>
+    <input type="email" class="sp-in" id="sp-email" placeholder="vous@email.ch" oninput="saveEmail(this.value)">
+  </div>
+  <div class="sp-s">
+    <div class="sp-st">➕ Ajouter une chaîne</div>
+    <input type="search" class="sp-in" id="add-search" placeholder="🔍 Rechercher une chaîne…" oninput="searchChannels(this.value)" autocomplete="off">
+    <div id="ch-search-results" style="max-height:200px;overflow-y:auto;margin-bottom:8px"></div>
+    <div class="sp-info">Recherchez parmi toutes les chaînes disponibles sur xmltvfr.fr et ajoutez-les en un tap.</div>
+    <div id="custom-ch-list" style="margin-top:8px"></div>
+  </div>
+  <div class="sp-s">
+    <div class="sp-st">📺 Chaînes actives <span style="font-size:9px;color:var(--live)">● = données réelles</span></div>
+    <div id="ch-toggles"></div>
+  </div>
+  <div class="sp-s">
+    <div class="sp-st">⚙️ Application</div>
+    <button class="sp-btn" onclick="forceRefresh()">🔄 Actualiser les données</button>
+    <button class="sp-btn" onclick="clearCache()">🗑️ Vider le cache</button>
+    <button class="sp-btn red" onclick="resetAll()">↺ Réinitialiser tout</button>
+  </div>
+  <div class="sp-ver">Guide TV Suisse v4.1 · xmltvfr.fr + Supabase</div>
+</div>
+<script>
+'use strict';
+const LOGOS=(()=>{const enc=s=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);const W=c=>enc('<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">'+c+'</svg>');const BG=(c,x)=>'<rect width="60" height="60" rx="10" fill="'+c+'"/>'+(x||'');const CLP='<defs><clipPath id="k"><rect width="60" height="60" rx="10"/></clipPath></defs><g clip-path="url(#k)">';const END='</g>';const TX=(t,y,sz,c,w,x)=>'<text x="'+(x||30)+'" y="'+y+'" font-family="Arial Black,Helvetica Neue,sans-serif" font-size="'+sz+'" font-weight="'+(w||900)+'" fill="'+(c||'#fff')+'" text-anchor="middle">'+t+'</text>';return{rts1:W(BG('#CC1111','<rect x="0" y="40" width="60" height="20" fill="rgba(0,0,0,.3)"/>')+TX('RTS',27,18)+TX('1',52,14,'rgba(255,255,255,.9)',700)),rts2:W(BG('#0A3F96','<rect x="0" y="40" width="60" height="20" fill="rgba(0,0,0,.3)"/>')+TX('RTS',27,18)+TX('2',52,14,'rgba(255,255,255,.9)',700)),rtsi:W(BG('#1a1a4e','<rect x="0" y="40" width="60" height="20" fill="rgba(0,0,0,.3)"/>')+TX('RTS',25,16)+TX('Info',52,12,'rgba(255,255,255,.85)',700)),tf1:W(CLP+'<rect width="60" height="60" fill="#0066CC"/><polygon points="0,0 60,0 60,60" fill="#0044AA"/>'+END+TX('TF1',37,27)),f2:W(CLP+'<rect width="60" height="60" fill="#003399"/>'+END+TX('F',31,22,'#fff',900,22)+TX('2',44,21,'#BBCCFF',900,40)),f3:W(BG('#007744','<rect x="0" y="43" width="60" height="17" fill="rgba(0,0,0,.22)"/>')+TX('F3',31,23)),arte:W(CLP+'<rect width="60" height="60" fill="#1a1a1a"/><rect x="30" width="30" height="60" fill="#C01010"/>'+END+TX('arte',35,15)),m6:W(CLP+'<rect width="60" height="60" fill="#E08000"/><ellipse cx="30" cy="72" rx="40" ry="32" fill="rgba(255,200,0,.25)"/>'+END+TX('M6',36,27)),f5:W(BG('#AA2222','<rect x="0" y="43" width="60" height="17" fill="rgba(0,0,0,.22)"/>')+TX('F5',31,23)),f4:W(BG('#DD5500','<rect x="0" y="43" width="60" height="17" fill="rgba(0,0,0,.22)"/>')+TX('F4',31,23)),tmc:W(BG('#CC1111')+TX('TMC',34,19)),tfx:W(CLP+'<rect width="60" height="60" fill="#EE0033"/>'+END+TX('TFX',34,19)),w9:W(CLP+'<rect width="60" height="60" fill="#6600CC"/><circle cx="50" cy="10" r="26" fill="rgba(255,255,255,.09)"/>'+END+TX('W9',35,26)),c8:W(BG('#CC0000')+TX('C8',35,27)),nrj12:W(CLP+'<rect width="60" height="60" fill="#EE4400"/><rect x="0" y="35" width="60" height="25" fill="rgba(0,0,0,.22)"/>'+END+TX('NRJ',26,14)+TX('12',47,18)),'6ter':W(CLP+'<rect width="60" height="60" fill="#8B6914"/><rect x="0" y="35" width="60" height="25" fill="rgba(0,0,0,.25)"/>'+END+TX('6ter',26,15)),guiz:W(CLP+'<rect width="60" height="60" fill="#009944"/><circle cx="30" cy="-8" r="36" fill="rgba(255,255,255,.1)"/>'+END+TX('Gulli',34,13)),chre:W(CLP+'<rect width="60" height="60" fill="#CC3388"/><circle cx="52" cy="52" r="32" fill="rgba(255,255,255,.1)"/>'+END+TX('Chérie',25,11)+TX('25',46,19)),bfm:W(CLP+'<rect width="60" height="60" fill="#CC0000"/><rect x="0" y="37" width="60" height="23" fill="rgba(0,0,0,.25)"/>'+END+TX('BFM',26,15)+TX('TV',48,14)),cnew:W(CLP+'<rect width="60" height="60" fill="#0055BB"/><rect x="0" y="37" width="60" height="23" fill="rgba(0,0,0,.22)"/>'+END+TX('C',25,15,'#fff',900,20)+TX('NEWS',25,12,'#fff',900,41)),f24:W(CLP+'<rect width="60" height="60" fill="#003388"/><rect x="0" y="0" width="60" height="5" fill="#CC0000"/>'+END+TX('FRANCE',24,10)+TX('24',43,22)),cpl:W(CLP+'<rect width="60" height="60" fill="#1a1a2e"/><circle cx="30" cy="30" r="28" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>'+END+TX('C+',35,24)),rmcd:W(CLP+'<rect width="60" height="60" fill="#00668A"/><rect x="0" y="37" width="60" height="23" fill="rgba(0,0,0,.22)"/>'+END+TX('RMC',25,13)+TX('Déc.',47,12)),rmcs:W(CLP+'<rect width="60" height="60" fill="#005577"/><rect x="0" y="37" width="60" height="23" fill="rgba(0,0,0,.22)"/>'+END+TX('RMC',25,13)+TX('Story',47,11)),tva:W(CLP+'<rect width="60" height="60" fill="#003399"/><polygon points="30,6 54,52 6,52" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>'+END+TX('TVA',35,18)),rdi:W(CLP+'<rect width="60" height="60" fill="#CC0000"/><rect x="0" y="37" width="60" height="23" fill="rgba(0,0,0,.22)"/>'+END+TX('RDI',33,18))};})();
+const REMOTE_LOGOS={
+  'rts1':'https://www.programme-tv.net/imgre/fit/~2~channel~86b9c7fb157c9a56.png/480x480/quality/100/rts-un.png',
+  'rts2':'https://www.programme-tv.net/imgre/fit/~2~channel~96e7582dedb5aa8e.png/480x480/quality/100/rts-deux.png',
+  'tf1':'https://www.programme-tv.net/imgre/fit/~2~channel~f2b6de26acc4dc3e.png/480x480/quality/100/tf1.png',
+  'f2':'https://www.programme-tv.net/imgre/fit/~2~channel~606394a5b095653a.png/480x480/quality/100/france-2.png',
+  'f3':'https://www.programme-tv.net/imgre/fit/~2~channel~61eebbb6e38360ae.png/480x480/quality/100/france-3.png',
+  'arte':'https://www.programme-tv.net/imgre/fit/~2~channel~d6bb7624abff43ac.png/480x480/quality/100/arte.png',
+  'm6':'https://www.programme-tv.net/imgre/fit/~2~channel~46c2dbade9ac9fed.png/480x480/quality/100/m6.png',
+  'f5':'https://www.programme-tv.net/imgre/fit/~2~channel~5f611b705ca3f017.png/480x480/quality/100/france-5.png',
+  'f4':'https://www.programme-tv.net/imgre/fit/~2~channel~e02946cfb82e5310.png/480x480/quality/100/france-4.png',
+  'tmc':'https://www.programme-tv.net/imgre/fit/~2~channel~b2c9618d914140d0.png/480x480/quality/100/tmc.png',
+  'w9':'https://www.programme-tv.net/imgre/fit/~2~channel~15acfc705e2d4dd8.png/480x480/quality/100/w9.png',
+  '6ter':'https://www.programme-tv.net/imgre/fit/~2~channel~ceee54072118570a.png/480x480/quality/100/6ter.png',
+  'guiz':'https://www.programme-tv.net/imgre/fit/~2~channel~059a8175b83117fd.png/480x480/quality/100/gulli.png',
+  'chre':'https://www.programme-tv.net/imgre/fit/~2~channel~91bf2b7762746d0c.png/480x480/quality/100/rmc-life.png',
+  'bfm':'https://www.programme-tv.net/imgre/fit/~2~channel~9048e02338fb1134.png/480x480/quality/100/bfmtv.png',
+  'cnew':'https://www.programme-tv.net/imgre/fit/~2~channel~952ec4ae63b20c1b.png/480x480/quality/100/cnews.png',
+  'f24':'https://www.programme-tv.net/imgre/fit/~2~channel~afbbeba076c073d9.png/480x480/quality/100/france-24.png',
+  'cpl':'https://www.programme-tv.net/imgre/fit/~2~channel~897223a57e2e8ae5.png/480x480/quality/100/canal.png',
+  'rmcd':'https://www.programme-tv.net/imgre/fit/~2~channel~a95c9fa646201300.png/480x480/quality/100/rmc-decouverte.png',
+  'cx_tv5monde_fr':'https://www.programme-tv.net/imgre/fit/~2~channel~0231873fab336015.png/480x480/quality/100/tv5monde.png',
+  'cx_lemanbleu_ch':'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/93091827?=.png',
+  'cx_lci_fr':'https://www.programme-tv.net/imgre/fit/~2~channel~1314d39cfeea2a5c.png/480x480/quality/100/lci-la-chaine-info.png',
+  'cx_rtl9_fr':'https://www.programme-tv.net/imgre/fit/~2~channel~39e76725dfcc33a3.png/480x480/quality/100/rtl-9.png',
+  'cx_8montblanc_fr':'https://www.programme-tv.net/imgre/fit/~2~channel~13cb973b12bc553a.png/480x480/quality/100/8-mont-blanc.png',
+  'cx_canal9_fr':'https://static.teleboy.ch/shared/stations/408/icon320_light.png?v2023_48_0',
+  'cx_l_equipe21_fr':'https://www.programme-tv.net/imgre/fit/~2~channel~060edf53b072af43.png/480x480/quality/100/l-equipe.png',
+  'cx_cstar_fr':'https://www.programme-tv.net/imgre/fit/~2~channel~9583d8a6fa9d6ade.png/480x480/quality/100/cstar.png',
+  'tfx':'https://www.programme-tv.net/imgre/fit/~2~channel~71e551462d6114e5.png/480x480/quality/100/tfx.png',
+  'cx_ab3_be':'https://www.programme-tv.net/imgre/fit/~2~channel~deec8bc0a9e988af.png/480x480/quality/100/ab-3.png',
+};
+function getLogo(id){const ch=CATALOG.find(c=>c.id===id);if(ch&&ch.logoUrl)return ch.logoUrl;return REMOTE_LOGOS[id]||LOGOS[id]||null;}
+function getLogoUrl(id){return REMOTE_LOGOS[id]||null;}
+function mkLogo(id,ch,sz){sz=sz||52;const src=getLogo(id);if(src)return'<div class="ch-logo" style="width:'+sz+'px;height:'+sz+'px;background:#fff"><img src="'+src+'" width="'+sz+'" height="'+sz+'" style="object-fit:contain;padding:2px"></div>';return'<div class="ch-logo" style="width:'+sz+'px;height:'+sz+'px;background:'+(ch&&ch.color||'#555')+';border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff">'+esc((ch&&ch.abbr)||'?')+'</div>';}
+
+const BASE_CATALOG=[
+{id:'rts1',name:'RTS 1',cc:'CH',color:'#CC1111',abbr:'RTS1'},
+{id:'rts2',name:'RTS 2',cc:'CH',color:'#0A3F96',abbr:'RTS2'},
+{id:'rtsi',name:'RTS Info',cc:'CH',color:'#1a1a4e',abbr:'RTSI'},
+{id:'tf1',name:'TF1',cc:'FR',color:'#0066CC',abbr:'TF1'},
+{id:'f2',name:'France 2',cc:'FR',color:'#003399',abbr:'F2'},
+{id:'f3',name:'France 3',cc:'FR',color:'#007744',abbr:'F3'},
+{id:'arte',name:'Arte',cc:'FR',color:'#1a1a1a',abbr:'ARTE'},
+{id:'m6',name:'M6',cc:'FR',color:'#E08000',abbr:'M6'},
+{id:'f5',name:'France 5',cc:'FR',color:'#AA2222',abbr:'F5'},
+{id:'f4',name:'France 4',cc:'FR',color:'#DD5500',abbr:'F4'},
+{id:'tmc',name:'TMC',cc:'FR',color:'#CC1111',abbr:'TMC'},
+{id:'tfx',name:'TFX',cc:'FR',color:'#EE0033',abbr:'TFX'},
+{id:'w9',name:'W9',cc:'FR',color:'#6600CC',abbr:'W9'},
+{id:'c8',name:'C8',cc:'FR',color:'#CC0000',abbr:'C8'},
+{id:'nrj12',name:'NRJ 12',cc:'FR',color:'#EE4400',abbr:'NRJ'},
+{id:'6ter',name:'6ter',cc:'FR',color:'#8B6914',abbr:'6TER'},
+{id:'guiz',name:'Gulli',cc:'FR',color:'#009944',abbr:'GULL'},
+{id:'chre',name:'Chérie 25',cc:'FR',color:'#CC3388',abbr:'CH25'},
+{id:'bfm',name:'BFMTV',cc:'FR',color:'#CC0000',abbr:'BFM'},
+{id:'cnew',name:'CNews',cc:'FR',color:'#0055BB',abbr:'CNW'},
+{id:'f24',name:'France 24',cc:'FR',color:'#003388',abbr:'F24'},
+{id:'cpl',name:'Canal+',cc:'FR',color:'#1a1a2e',abbr:'C+'},
+{id:'rmcd',name:'RMC Déc.',cc:'FR',color:'#00668A',abbr:'RMCD'},
+{id:'rmcs',name:'RMC Story',cc:'FR',color:'#005577',abbr:'RMCS'},
+{id:'tva',name:'TVA',cc:'CA',color:'#003399',abbr:'TVA'},
+{id:'rdi',name:'RDI',cc:'CA',color:'#CC0000',abbr:'RDI'},
+{id:'cx_tv5monde_fr',name:'TV5 Monde',cc:'FR',color:'#003F9E',abbr:'TV5'},
+{id:'cx_lemanbleu_ch',name:'Léman Bleu',cc:'CH',color:'#00AACC',abbr:'LB'},
+{id:'cx_lci_fr',name:'LCI',cc:'FR',color:'#CC0000',abbr:'LCI'},
+{id:'cx_rtl9_fr',name:'RTL9',cc:'FR',color:'#FF6600',abbr:'RTL9'},
+{id:'cx_8montblanc_fr',name:'8 Mont Blanc',cc:'FR',color:'#2244AA',abbr:'8MB'},
+{id:'cx_canal9_fr',name:'Canal 9',cc:'CH',color:'#007755',abbr:'CH9'},
+{id:'cx_l_equipe21_fr',name:"L'Équipe",cc:'FR',color:'#003399',abbr:'EQ'},
+{id:'cx_cstar_fr',name:'CStar',cc:'FR',color:'#CC0066',abbr:'CS'},
+{id:'tv5m',name:'TV5 Monde',cc:'FR',color:'#003F9E',abbr:'TV5'},
+{id:'leman',name:'Léman Bleu',cc:'CH',color:'#0055AA',abbr:'LB'},
+{id:'lci',name:'LCI',cc:'FR',color:'#CC0000',abbr:'LCI'},
+{id:'rtl9',name:'RTL9',cc:'FR',color:'#FF6600',abbr:'RTL9'},
+{id:'8mb',name:'8 Mont Blanc',cc:'FR',color:'#2244AA',abbr:'8MB'},
+{id:'can9',name:'Canal 9',cc:'CH',color:'#007755',abbr:'CH9'},
+{id:'equipe',name:"L'Équipe",cc:'FR',color:'#003399',abbr:'EQ'},
+{id:'cstar',name:'CStar',cc:'FR',color:'#CC0066',abbr:'CS'},
+];
+let CATALOG=[...BASE_CATALOG];
+const DEF_ON=['rts1','rts2','rtsi','tf1','f2','f3','arte','m6','cx_tv5monde_fr','cx_lemanbleu_ch','cx_lci_fr','cx_rtl9_fr','cx_8montblanc_fr','cx_canal9_fr','cx_l_equipe21_fr','cx_cstar_fr'];
+
+const ST={date:todayStr(),mode:'grid',chId:null,modal:null,email:'',channels:[],sbUrl:'',sbKey:'',data:{}};
+const OBJ=new Map();let _oid=0;
+const stash=o=>{const k='o'+(++_oid);OBJ.set(k,o);return k;};
+const pop=k=>OBJ.get(k);
+
+// Supabase
+async function sbFetch(chId,date){
+  if(!ST.sbUrl||!ST.sbKey)return null;
+  const url=ST.sbUrl+'/rest/v1/tv_programs?channel_id=eq.'+chId+'&program_date=eq.'+date+'&select=*&order=start_time';
+  try{
+    const r=await fetch(url,{headers:{apikey:ST.sbKey,Authorization:'Bearer '+ST.sbKey},signal:AbortSignal.timeout(8000)});
+    if(!r.ok)return null;
+    const rows=await r.json();
+    if(!Array.isArray(rows)||rows.length<1)return null;
+    return rows.map(row=>({_id:'SB:'+row.id,channelId:chId,date:row.program_date,time:(row.start_time||'').slice(0,5),endTime:row.end_time?row.end_time.slice(0,5):null,runtime:row.duration_min||30,name:row.title||'—',showName:row.title||'—',genres:row.categories?row.categories.split(',').map(s=>s.trim()).filter(Boolean):['Divers'],summary:row.description||'',_real:true}));
+  }catch{return null;}
+}
+async function loadAllData(){
+  const dates=dateRange();const jobs=[];
+  for(const ch of ST.channels)for(const d of dates)jobs.push({ch,d});
+  let done=0;
+  await Promise.all(jobs.map(async({ch,d})=>{
+    if(!ST.data[ch.id])ST.data[ch.id]={};
+    if(ST.data[ch.id][d]!==undefined){done++;return;}
+    ST.data[ch.id][d]=await sbFetch(ch.id,d);
+    done++;
+    const pct=Math.round(done/jobs.length*100);
+    document.getElementById('upd-fill').style.width=pct+'%';
+    document.getElementById('upd-msg').textContent='Chargement Supabase… '+pct+'%';
+  }));
+}
+
+// Fallback local
+function isWE(ds){const d=new Date(ds+'T12:00:00');return d.getDay()===0||d.getDay()===6;}
+const LOC={rts1:{wd:['06:00|Couleurs locales|Magazine|30','06:30|Téléjournal matin|Info|30','07:00|Passe-moi les jumelles|Nature|60','08:00|Faut pas rêver|Voyage|90','09:30|ABE|Consommateurs|50','12:00|Couleurs locales|Magazine|20','12:20|Le 12h45|Info|25','19:00|Le 19h30|Info|30','19:40|Temps Présent|Reportage|55','20:35|Droit de Savoir|Magazine|50','21:25|Infrarouge|Documentaire|55','22:20|Téléjournal|Info|25'],we:['07:00|Couleurs locales|Magazine|30','08:30|Faut pas rêver|Voyage|90','10:00|Stade 2|Sport|60','11:30|Mise au point|Magazine|55','12:30|Le 12h45|Info|20','13:10|Téléfilm|Cinéma|100','16:30|Zone Bleue|Culture|55','17:25|Sport|Sport|60','19:00|Le 19h30|Info|30','19:05|Film|Cinéma|110','20:55|Téléjournal|Info|25']},tf1:{wd:['06:00|Matinale|Magazine|210','09:30|Ici tout commence|Série|30','10:00|Demain nous appartient|Série|30','12:00|JT 13h|Info|45','14:00|Série|Série|90','16:00|Ici tout commence|Série|30','18:00|JT 20h|Info|40','19:00|Prime time|Divertissement|135','21:10|Série|Série|55'],we:['06:00|Matinale|Magazine|120','08:00|Sport|Sport|60','11:45|JT 13h|Info|45','14:00|Film|Cinéma|115','16:00|JT 20h|Info|40','19:00|Prime time|Cinéma|115','22:00|Série|Série|50']},f2:{wd:['06:00|Télématin|Magazine|120','09:00|Jeu|Jeu|120','11:30|JT 13h|Info|45','13:55|Série|Série|90','16:15|Jeu|Jeu|110','18:35|JT 20h|Info|40','19:25|Magazine|Magazine|85','20:50|Documentaire|Documentaire|60'],we:['06:00|Télématin|Magazine|120','10:55|JT 13h|Info|45','13:00|Film|Cinéma|110','18:00|JT 20h|Info|40','19:00|Film|Cinéma|110']},f3:{wd:['06:00|Matinale|Magazine|150','09:00|Jeu|Jeu|60','12:25|JT régional|Info|50','14:45|Série|Série|50','18:35|JT régional|Info|45','19:55|Plus belle la vie|Série|25','20:20|Documentaire|Documentaire|90'],we:['08:30|Sport|Sport|60','10:25|Série|Série|100','12:50|JT régional|Info|50','18:10|Jeu|Jeu|130','20:45|Documentaire|Documentaire|95']},arte:{wd:['07:05|Arte Journal|Info|30','08:55|28 Minutes|Magazine|45','10:10|Documentaire|Documentaire|110','12:00|Arte Journal|Info|30','13:00|Arte Cinéma|Cinéma|110','17:35|28 Minutes|Magazine|45','18:50|Arte Journal|Info|30','19:50|Ciné-Club Arte|Cinéma|130'],we:['07:35|Arte Journal|Info|30','09:15|Documentaire|Documentaire|110','13:00|Arte Cinéma|Cinéma|115','19:50|Concert|Musique|130']},m6:{wd:['08:00|Turbo|Auto|60','09:00|Capital|Magazine|90','12:00|Scènes de ménages|Comédie|30','12:30|JT|Info|20','17:30|Scènes de ménages|Comédie|60','18:45|JT|Info|20','19:10|Prime time|Aventure|125'],we:['08:00|Turbo|Auto|60','09:00|66 minutes|Magazine|90','12:00|Scènes de ménages|Comédie|30','17:30|Scènes de ménages|Comédie|60','18:10|Prime time|Aventure|130']}};
+function localFallback(chId,date){const sch=LOC[chId];if(!sch)return genFallback(chId,date);return(isWE(date)?sch.we:sch.wd).map(function(l,i){const p=l.split('|');const t=p[0],n=p[1],g=p[2],dur=parseInt(p[3])||30;const pts=t.split(':'),h=parseInt(pts[0]),m=parseInt(pts[1]),tot=h*60+m+dur;return{_id:'L:'+chId+':'+i,channelId:chId,date:date,time:t,endTime:pad(Math.floor(tot/60)%24)+':'+pad(tot%60),runtime:dur,name:n,showName:n,genres:[g],summary:'',_real:false};});}
+function genFallback(chId,date){return[['06:00','Matinale','Magazine',120],['09:00','Documentaire','Documentaire',55],['12:00','Journal','Info',30],['13:30','Film','Cinéma',110],['18:00','Journal','Info',30],['20:00','Prime time','Divertissement',120],['22:00','Série','Série',50]].map(function(a,i){const t=a[0],n=a[1],g=a[2],dur=a[3];const pts=t.split(':'),h=parseInt(pts[0]),m=parseInt(pts[1]),tot=h*60+m+dur;return{_id:'G:'+chId+':'+i,channelId:chId,date:date,time:t,endTime:pad(Math.floor(tot/60)%24)+':'+pad(tot%60),runtime:dur,name:n,showName:n,genres:[g],summary:'',_real:false};});}
+
+// Utils
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function offDay(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+function dateRange(){return Array.from({length:8},function(_,i){return offDay(-1+i);});}
+function pad(n){return String(n).padStart(2,'0');}
+function nowMins(){const n=new Date();return n.getHours()*60+n.getMinutes();}
+function t2m(t){if(!t)return 0;const p=t.split(':');return parseInt(p[0])*60+(parseInt(p[1])||0);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function getShows(chId,date){const d=ST.data[chId];if(d&&d[date]&&Array.isArray(d[date])&&d[date].length)return d[date];return localFallback(chId,date);}
+function isReal(chId,date){const d=ST.data[chId];return!!(d&&d[date]&&Array.isArray(d[date])&&d[date].length);}
+function isLive(s,date){if(date!==todayStr())return false;const nm=nowMins(),st=t2m(s.time),en=s.endTime?t2m(s.endTime):st+(s.runtime||30),enA=en<=st?en+1440:en;return nm>=st&&nm<enA;}
+function isPast(s,date){const t=todayStr();if(date<t)return true;if(date>t)return false;const nm=nowMins(),st=t2m(s.time),en=s.endTime?t2m(s.endTime):st+(s.runtime||30),enA=en<=st?en+1440:en;return nm>=enA;}
+function progress(s){const nm=nowMins(),st=t2m(s.time),en=s.endTime?t2m(s.endTime):st+(s.runtime||30),enA=en<=st?en+1440:en,dur=enA-st;return dur<=0?0:Math.min(100,Math.max(0,(nm-st)/dur*100));}
+function nowShows(chId,date){const shows=getShows(chId,date),nm=nowMins(),t=todayStr();if(!shows.length)return{cur:null,nxt:null};if(date!==t)return{cur:shows[0],nxt:shows[1]||null};let cur=null,nxt=null;for(let i=0;i<shows.length;i++){const s=shows[i],st=t2m(s.time),en=s.endTime?t2m(s.endTime):st+(s.runtime||30),enA=en<=st?en+1440:en;if(nm>=st&&nm<enA){cur=s;nxt=shows[i+1]||null;break;}if(st>nm&&!nxt){nxt=s;if(i>0)cur=shows[i-1];}}if(!cur&&shows.length)cur=shows[shows.length-1];return{cur:cur,nxt:nxt};}
+function findReruns(show){const out=[],tgt=norm(show.showName||show.name||''),seen=new Set();for(const d of dateRange())for(const ch of ST.channels)for(const s of getShows(ch.id,d)){if(norm(s.showName||s.name||'')!==tgt)continue;if(s.date===show.date&&s.time===show.time&&ch.id===show.channelId)continue;const k=s.date+'|'+s.time+'|'+ch.id;if(seen.has(k))continue;seen.add(k);out.push(Object.assign({},s,{channelId:ch.id,chObj:ch}));}return out.sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time)).slice(0,12);}
+function searchAll(q){if(!q||q.length<2)return[];const qn=norm(q),out=[],seen=new Set();for(const d of dateRange())for(const ch of ST.channels)for(const s of getShows(ch.id,d)){if(!norm((s.name||'')+' '+(s.genres||[]).join(' ')+' '+(s.summary||'')).includes(qn))continue;const k=s.name+'|'+d+'|'+s.time+'|'+ch.id;if(seen.has(k))continue;seen.add(k);out.push(Object.assign({},s,{channelId:ch.id,chObj:ch}));}return out.sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));}
+function hl(text,q){if(!q)return esc(text);return esc(text).replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark class="hl">$1</mark>');}
+function fmtDate(ds,short){const t=todayStr();if(ds===t)return"Aujourd'hui";if(ds===offDay(-1))return'Hier';if(ds===offDay(1))return'Demain';const d=new Date(ds+'T12:00:00');return d.toLocaleDateString('fr-CH',short?{weekday:'short',day:'numeric',month:'short'}:{weekday:'long',day:'numeric',month:'long'});}
+function fmtStrip(ds){const t=todayStr();if(ds===t)return"Auj.";if(ds===offDay(-1))return'Hier';if(ds===offDay(1))return'Dem.';const d=new Date(ds+'T12:00:00');const wd=d.toLocaleDateString('fr-CH',{weekday:'short'});return wd[0].toUpperCase()+wd.slice(1)+' '+d.getDate();}
+
+// Config
+function lsGet(k,def){try{const v=localStorage.getItem('c:'+k);return v!=null?JSON.parse(v):def;}catch{return def;}}
+function lsSet(k,v){try{localStorage.setItem('c:'+k,JSON.stringify(v));}catch{}}
+const DEFAULT_SB_URL='https://buxbfyejpeeophlebdhb.supabase.co';
+const DEFAULT_SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1eGJmeWVqcGVlb3BobGViZGhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODcxOTgsImV4cCI6MjA4ODk2MzE5OH0.0X7l1XCGu3GcBC2bLvCZC32odhccssm6Zv6A5KcfoZk';
+function loadCfg(){
+  ST.email=lsGet('email','');
+  ST.sbUrl=(lsGet('sbUrl','')||DEFAULT_SB_URL).replace(/\/$/,'');
+  ST.sbKey=lsGet('sbKey','')||DEFAULT_SB_KEY;
+  const saved=lsGet('chs',null);
+  ST.channels=Array.isArray(saved)?saved.map(id=>CATALOG.find(c=>c.id===id)).filter(Boolean):CATALOG.filter(c=>DEF_ON.includes(c.id));
+}
+function saveChs(){lsSet('chs',ST.channels.map(c=>c.id));}
+function saveEmail(v){ST.email=v;lsSet('email',v);}
+function saveSB(){ST.sbUrl=document.getElementById('sp-sb-url').value.trim().replace(/\/$/,'');ST.sbKey=document.getElementById('sp-sb-key').value.trim();lsSet('sbUrl',ST.sbUrl);lsSet('sbKey',ST.sbKey);renderSBBadge();}
+
+// Custom channels
+function loadCustomChannels(){const saved=lsGet('custom_chs',[]);saved.forEach(ch=>{if(!CATALOG.find(c=>c.id===ch.id))CATALOG.push(ch);});}
+function saveCustomChannels(){
+  lsSet('custom_chs',CATALOG.filter(c=>c._custom));
+  // Sync vers Supabase
+  const customs=CATALOG.filter(c=>c._custom);
+  if(!ST.sbUrl||!ST.sbKey||!customs.length)return;
+  customs.forEach(ch=>{
+    fetch(ST.sbUrl+'/rest/v1/custom_channels',{
+      method:'POST',
+      headers:{apikey:ST.sbKey,Authorization:'Bearer '+ST.sbKey,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},
+      body:JSON.stringify({channel_id:ch.id,name:ch.name,xmltvfr_id:ch.xmltvfrId||'',color:ch.color,abbr:ch.abbr,logo_url:ch.logoUrl||''})
+    }).catch(()=>{});
+  });
+}
+async function loadCustomChannelsFromSupabase(){
+  if(!ST.sbUrl||!ST.sbKey)return;
+  try{
+    const r=await fetch(ST.sbUrl+'/rest/v1/custom_channels?select=*',{
+      headers:{apikey:ST.sbKey,Authorization:'Bearer '+ST.sbKey}
+    });
+    if(!r.ok)return;
+    const rows=await r.json();
+    if(!Array.isArray(rows))return;
+    rows.forEach(row=>{
+      const existing=CATALOG.find(c=>c.id===row.channel_id);
+      if(existing){if(row.logo_url)existing.logoUrl=row.logo_url;return;}
+      CATALOG.push({id:row.channel_id,name:row.name,cc:'FR',color:row.color||'#4455AA',abbr:row.abbr||'CH',_custom:true,xmltvfrId:row.xmltvfr_id,logoUrl:row.logo_url||''});
+    });
+  }catch{}
+}
+// Catalogue xmltvfr complet (principales chaînes francophones)
+const XMLTV_CATALOG=[
+ {id:'01TV.fr',name:'TECH & CO',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/SFR100x100COLORTECHCO.png'},
+ {id:'13eRue.fr',name:'13ème rue',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c7a8275787244ffe.png/480x480/quality/100/13eme-rue.png'},
+ {id:'2MMonde.fr',name:'2M Maroc',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/54/canal-ouah/CHN43FB/CHN43FB_54_20251013-ePgp?=.png'},
+ {id:'3Plus.ch',name:'3+',logo:'https://static.teleboy.ch/shared/stations/350/icon320_light.png?v2023_48_0'},
+ {id:'4Plus.ch',name:'4Plus.ch'},
+ {id:'5Plus.ch',name:'5Plus.ch'},
+ {id:'6Plus.ch',name:'6Plus.ch'},
+ {id:'6ter.fr',name:'6ter',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~ceee54072118570a.png/480x480/quality/100/6ter.png'},
+ {id:'7ALimoges.fr',name:'7 A LIMOGES',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/7_A_LIMOGES_color.png'},
+ {id:'7Plus.ch',name:'7Plus.ch'},
+ {id:'8MontBlanc.fr',name:'8 Mont Blanc',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~13cb973b12bc553a.png/480x480/quality/100/8-mont-blanc.png'},
+ {id:'AB1.fr',name:'AB1',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a15b4a2cb74dfd54.png/480x480/quality/100/ab-1.png'},
+ {id:'AB3.fr',name:'AB3',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~deec8bc0a9e988af.png/480x480/quality/100/ab-3.png'},
+ {id:'ABMoteurs.fr',name:'Automoto la chaine',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~af9996c05345acc0.png/480x480/quality/100/automoto.png'},
+ {id:'ABXploreFR.fr',name:'ABXplore',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~055ec590f83aa135.png/480x480/quality/100/abxplore.png'},
+ {id:'ACTUATV.be',name:'Actua TV',logo:'https://www.actu-tv.com/images/logo.gif'},
+ {id:'ACTV.be',name:'ACTV',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/ACTV.svg/1200px-ACTV.svg.png'},
+ {id:'ADDIKTV.ca',name:'Addik TV',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s44962_h15_ab.png'},
+ {id:'AMITV.ca',name:'AMITV',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s62670_h15_ab.png'},
+ {id:'APlusInternational.fr',name:'A+',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1a1c0301d113309c.png/480x480/quality/100/a-international-france.png'},
+ {id:'ASTV.fr',name:'ASTV',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/ASTV100x100couleuir.png'},
+ {id:'ATVGuadeloupe.fr',name:'ATVGuadeloupe.fr'},
+ {id:'ATVGuyane.fr',name:'ATVGuyane.fr'},
+ {id:'ATVMartinique.fr',name:'ATVMartinique.fr'},
+ {id:'Action.fr',name:'Action',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c9d2c60078632b83.png/480x480/quality/100/action.png'},
+ {id:'AdultSwim.fr',name:'AdultSwim.fr'},
+ {id:'Alsace20.fr',name:'BFM ALSACE',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~8bb328e022ffe2db.png/480x480/quality/100/bfm-alsace.png'},
+ {id:'AngersTele.fr',name:'Angers télé',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/AngersTV100x100.png'},
+ {id:'Animaux.fr',name:'Animaux',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~d5bfad7c376468c6.png/480x480/quality/100/animaux.png'},
+ {id:'AntenneCentre.be',name:'AntenneCentre.be'},
+ {id:'AntenneReunion.fr',name:'ANTENNE REUNION',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160005/canal-ouah/CHN43FB/ANTENNEREUNION_myCANAL_640x480?=.png'},
+ {id:'Arte.be',name:'Arte Belgique',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-2544.png'},
+ {id:'Arte.fr',name:'Arte',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~d6bb7624abff43ac.png/480x480/quality/100/arte.png'},
+ {id:'AstroCenter.fr',name:'Astrocenter TV',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/64174310?=.png'},
+ {id:'AutoPlusTV.fr',name:'Auto Plus TV',logo:'https://freebox.cdn.scw.iliad.fr/large_AUTOPLUS_61b02519b4.png'},
+ {id:'AzurTV.fr',name:"BFM NICE COTE D'AZUR",logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/NEUFBFMNICECOTEDAZUR100x100.png'},
+ {id:'BBlack.fr',name:'BBlack.fr'},
+ {id:'BBlackAfrica.fr',name:'BBLACK Africa',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/BBLACK_AFRICA_color.png'},
+ {id:'BBlackCaribbean.fr',name:'BBLACK Caribbean',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/BBLACK_CARIBBEAN_color.png'},
+ {id:'BBlackClassik.fr',name:'BBLACK Classik',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/BBLACK_CLASSIK_color.png'},
+ {id:'BE1Plus1H.be',name:'BE1Plus1H',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRawaRx7vpJ7QD8Aq-f5ciHeBGEjrokb0Ytrgpr3med0W2D1oB-NYyEAFPGdg&s'},
+ {id:'BEIS.ca',name:'BEIS',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s91308_h9_ab.png'},
+ {id:'BET.fr',name:'BET',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-1960.png'},
+ {id:'BFM2.fr',name:'BFM 2',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300BFM2coul.png'},
+ {id:'BFMBusiness.fr',name:'BFM Business',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~7eb91da112d351e5.png/480x480/quality/100/bfm-business.png'},
+ {id:'BFMGrandLille.fr',name:'BFM Grand Lille',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~5a012f0d7afc9c4c.png/480x480/quality/100/bfm-grand-lille.png'},
+ {id:'BFMGrandLittoral.fr',name:'BFM Grand Littoral',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/bfmgrandlittoral-100x100.png'},
+ {id:'BFMGrandsReportages.fr',name:'BFM Grands Reportages',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300BFMGRANDSREPORTAGESmono.png'},
+ {id:'BFMJiraiDormirChezVous.fr',name:'BFMJiraiDormirChezVous.fr'},
+ {id:'BFMTV.fr',name:'BFM TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~9048e02338fb1134.png/480x480/quality/100/bfmtv.png'},
+ {id:'BLUEZOOM.ch',name:'blue Zoom fr',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/893/canal-ouah/CHN43FB/bluezoomfb?=.png'},
+ {id:'BSmartTV.fr',name:'BSmartTV',logo:'https://pbs.twimg.com/profile_images/1262702152155308032/96HGtdpa_400x400.jpg'},
+ {id:'BX1.be',name:'BX1',logo:'https://upload.wikimedia.org/wikipedia/commons/1/1f/BX1_logo.svg'},
+ {id:'BabyTV.fr',name:'BabyTV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~346eb6ce286fe2fd.png/480x480/quality/100/baby-tv.png'},
+ {id:'Be1.be',name:'Be1',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~855f4375327f90a1.png/480x480/quality/100/be-1.png'},
+ {id:'BeCine.be',name:'Be Ciné',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c1346753213a3048.png/480x480/quality/100/be-cine.png'},
+ {id:'BeSeries.be',name:'Be Series',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~4f1dea565fa82d4c.png/480x480/quality/100/be-series.png'},
+ {id:'BelRTL.be',name:'Bel RTL',logo:'https://upload.wikimedia.org/wikipedia/fr/1/1a/Bel_RTL_logo_2018.png'},
+ {id:'BipTV.fr',name:'BipTV.fr'},
+ {id:'Boing.fr',name:'Cartoonito',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~8b00d7887720df90.png/480x480/quality/100/cartoonito.png'},
+ {id:'Boomerang.fr',name:'Boomerang',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~2d1423f31cdcab25.png/480x480/quality/100/boomerang.png'},
+ {id:'Boomerangplus1.fr',name:'Boomerang +1',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/Boomerang_1_color.png'},
+ {id:'Bruzz.be',name:'Bruzz',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/BRUZZ_LOGO_RED_RGB.png/640px-BRUZZ_LOGO_RED_RGB.png'},
+ {id:'CANALZ.be',name:'CANALZ',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6ccba117196c793c.png/480x480/quality/100/canal-z.png'},
+ {id:'CARAC4.ch',name:'CARAC4',logo:'https://static.teleboy.ch/shared/stations/527/icon320_light.png?v2023_48_0'},
+ {id:'CBAFT.ca',name:'ICI Radio Canada Télé Acadie',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/ICI_T%C3%A9l%C3%A9_logo.svg/langfr-400px-ICI_T%C3%A9l%C3%A9_logo.svg.png'},
+ {id:'CBFT.ca',name:'ICI Radio Canada Télé Grand Montréal',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s16371_h15_ae.png'},
+ {id:'CBKFT.ca',name:'ICI Radio Canada Télé Saskatchewan',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/ICI_T%C3%A9l%C3%A9_logo.svg/1200px-ICI_T%C3%A9l%C3%A9_logo.svg.png'},
+ {id:'CBLFT.ca',name:'ICI Radio Canada Télé Ontario',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/ICI_T%C3%A9l%C3%A9_logo.svg/800px-ICI_T%C3%A9l%C3%A9_logo.svg.png'},
+ {id:'CBMT.ca',name:'CBMT',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s10084_h15_ab.png'},
+ {id:'CBOFT.ca',name:'ICI Radio Canada Télé Ottawa-Gatineau',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/ICI_T%C3%A9l%C3%A9_logo.svg/800px-ICI_T%C3%A9l%C3%A9_logo.svg.png'},
+ {id:'CBUFT.ca',name:'ICI Radio Canada Télé Colombie Britannique',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s16371_h15_ae.png'},
+ {id:'CBUT.ca',name:'CBUT',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjaLplAtThR80u87pVWzaNph2h4UbSpTxf4nNZlMBygvc2-RGuGGwN-i1-1Kw&amp;s'},
+ {id:'CBVT.ca',name:'ICI Radio Canada Télé Québec',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/ICI_T%C3%A9l%C3%A9_logo.svg/800px-ICI_T%C3%A9l%C3%A9_logo.svg.png'},
+ {id:'CBWFT.ca',name:'ICI Radio Canada Télé Manitoba',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s16371_h15_ae.png'},
+ {id:'CBXFT.ca',name:'ICI Radio Canada Télé Alberta',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/ICI_T%C3%A9l%C3%A9_logo.svg/langfr-560px-ICI_T%C3%A9l%C3%A9_logo.svg.png'},
+ {id:'CFKM.ca',name:'CFKM',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s15696_h15_ac.png'},
+ {id:'CFTM.ca',name:'CFTM',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s16367_h15_ab.png'},
+ {id:'CGTN.fr',name:'CGTN',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-318.png'},
+ {id:'CIVM.ca',name:'CIVM'},
+ {id:'CJBR.ca',name:'ICI Radio Canada Télé Est du Québec',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/ICI_T%C3%A9l%C3%A9_logo.svg/1200px-ICI_T%C3%A9l%C3%A9_logo.svg.png'},
+ {id:'CKSH.ca',name:'ICI Radio Canada Télé Estrie',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/ICI_T%C3%A9l%C3%A9_logo.svg/800px-ICI_T%C3%A9l%C3%A9_logo.svg.png'},
+ {id:'CKTM.ca',name:'ICI Radio Canada Télé Mauricie Centre du Québec',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s16371_h15_ae.png'},
+ {id:'CKTV.ca',name:'ICI Radio Canada Télé Saguenay',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/ICI_T%C3%A9l%C3%A9_logo.svg/800px-ICI_T%C3%A9l%C3%A9_logo.svg.png'},
+ {id:'CNews.fr',name:'CNews',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~952ec4ae63b20c1b.png/480x480/quality/100/cnews.png'},
+ {id:'CNewsPrime.fr',name:'CNews Prime',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1172/canal-ouah/CHN43FB/CHN43FB_1172_20251124-fNSv?=.png'},
+ {id:'CPAC.ca',name:'CPAC',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s17608_h15_ae.png'},
+ {id:'CStar.ch',name:'CSTAR',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/94856040?=.png'},
+ {id:'CStar.fr',name:'CStar',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~9583d8a6fa9d6ade.png/480x480/quality/100/cstar.png'},
+ {id:'CStarHitsFrance.fr',name:'CStar Hits France',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~60e55ca9703f07f9.png/480x480/quality/100/cstar-hits-france.png'},
+ {id:'Canal10Guadeloupe.fr',name:'Canal10Guadeloupe.fr'},
+ {id:'Canal21.fr',name:'Canal 21',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/Canal_21_color.png'},
+ {id:'Canal32.fr',name:'Canal 32',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6d0e7341e1a8b708.png/480x480/quality/100/canal-32.png'},
+ {id:'Canal9.fr',name:'Canal9',logo:'https://static.teleboy.ch/shared/stations/408/icon320_light.png?v2023_48_0'},
+ {id:'CanalAlphaJura.ch',name:'Canal Alpha Jura',logo:'https://static.teleboy.ch/shared/stations/525/icon320_light.png?v2023_48_0'},
+ {id:'CanalC.be',name:'CanalC',logo:'https://upload.wikimedia.org/wikipedia/commons/8/8b/Canal_C_logo.png'},
+ {id:'CanalD.ca',name:'CanalD',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s15682_h9_aa.png'},
+ {id:'CanalJ.fr',name:'CANAL J',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~af78921dcd4437f4.png/480x480/quality/100/canal-j.png'},
+ {id:'CanalPlus.ch',name:'Canal+ Suisse',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/94855624?=.png'},
+ {id:'CanalPlus.fr',name:'Canal+',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~897223a57e2e8ae5.png/480x480/quality/100/canal.png'},
+ {id:'CanalPlusAntilles.fr',name:'CanalPlusAntilles.fr'},
+ {id:'CanalPlusBoxOffice.fr',name:'CANAL+ BOX OFFICE',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~69a3e9057bb45421.png/480x480/quality/100/canal-box-office.png'},
+ {id:'CanalPlusCinema.ch',name:'Canal+ Cinema',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/827/canal-ouah/CHN43FB/640x480-DP6t?=.png'},
+ {id:'CanalPlusCinema.fr',name:'Canal+ Cinema',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~0b078790aeb2d121.png/480x480/quality/100/canal-cinema.png'},
+ {id:'CanalPlusDocs.fr',name:'Canal+ Docs',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~b0dab3f2632272a9.png/480x480/quality/100/canal-docs.png'},
+ {id:'CanalPlusFoot.fr',name:'Canal+ Foot',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~335ee2c06aacae64.png/480x480/quality/100/canal-foot.png'},
+ {id:'CanalPlusGrandEcran.fr',name:'Canal+ Grand Ecran',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6826f74c606125a6.png/480x480/quality/100/canal-grand-ecran.png'},
+ {id:'CanalPlusKIDS.fr',name:'Canal+ Kids',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a0c591e8c97c5f9d.png/480x480/quality/100/canal-kids.png'},
+ {id:'CanalPlusLigue1.fr',name:'CANAL+ Ligue 1 Uber Eats',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~82089336e45e2d47.png/480x480/quality/100/canal-ligue-1.png'},
+ {id:'CanalPlusLive1.fr',name:'Canal+ Live 1',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1135/canal-ouah/CHN43FB/CHN43FB_1135_10092024-NNKZ?=.png'},
+ {id:'CanalPlusLive10.fr',name:'Canal+ Live 10',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1144/canal-ouah/CHN43FB/CHN43FB_1144_20240910-_8oo?=.png'},
+ {id:'CanalPlusLive11.fr',name:'Canal+ Live 11',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1145/canal-ouah/CHN43FB/CHN43FB_1145_20240910-x1TP?=.png'},
+ {id:'CanalPlusLive12.fr',name:'Canal+ Live 12',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1146/canal-ouah/CHN43FB/CHN43FB_1146_20240910-40D_?=.png'},
+ {id:'CanalPlusLive13.fr',name:'Canal+ Live 13',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1147/canal-ouah/CHN43FB/CHN43FB_1147_20240910-Ip9r?=.png'},
+ {id:'CanalPlusLive14.fr',name:'Canal+ Live 14',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1148/canal-ouah/CHN43FB/CHN43FB_1148_20240910-ulgW?=.png'},
+ {id:'CanalPlusLive15.fr',name:'Canal+ Live 15',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1149/canal-ouah/CHN43FB/CHN43FB_1149_20240910-Ga-Z?=.png'},
+ {id:'CanalPlusLive16.fr',name:'Canal+ Live 16',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1150/canal-ouah/CHN43FB/CHN43FB_1150_20240910-K1Su?=.png'},
+ {id:'CanalPlusLive17.fr',name:'Canal+ Live 17',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1151/canal-ouah/CHN43FB/CHN43FB_1151_20240910-H0Di?=.png'},
+ {id:'CanalPlusLive18.fr',name:'Canal+ Live 18',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1152/canal-ouah/CHN43FB/CHN43FB_1152_20240910-Fmmk?=.png'},
+ {id:'CanalPlusLive19.fr',name:'Canal+ Live 19',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1153/canal-ouah/CHN43FB/CHN43FB_1153_20240910-jfiB?=.png'},
+ {id:'CanalPlusLive2.fr',name:'Canal+ Live 2',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1136/canal-ouah/CHN43FB/CHN43FB_1136_20240910-9f4P?=.png'},
+ {id:'CanalPlusLive3.fr',name:'Canal+ Live 3',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1137/canal-ouah/CHN43FB/CHN43FB_1137_20240910-oIpK?=.png'},
+ {id:'CanalPlusLive4.fr',name:'Canal+ Live 4',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1138/canal-ouah/CHN43FB/CHN43FB_1138_20240910-Ejre?=.png'},
+ {id:'CanalPlusLive5.fr',name:'Canal+ Live 5',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1139/canal-ouah/CHN43FB/CHN43FB_1139_20240910-2Z2M?=.png'},
+ {id:'CanalPlusLive6.fr',name:'Canal+ Live 6',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1140/canal-ouah/CHN43FB/CHN43FB_1140_20240910-9Csx?=.png'},
+ {id:'CanalPlusLive7.fr',name:'Canal+ Live 7',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1141/canal-ouah/CHN43FB/CHN43FB_1141_20240910-56u_?=.png'},
+ {id:'CanalPlusLive8.fr',name:'Canal+ Live 8',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1142/canal-ouah/CHN43FB/CHN43FB_1142_20240910-kFEr?=.png'},
+ {id:'CanalPlusLive9.fr',name:'Canal+ Live 9',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1143/canal-ouah/CHN43FB/CHN43FB_1143_20240910-vvez?=.png'},
+ {id:'CanalPlusPremierLeague.fr',name:'Canal+ Premier League',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6f1b7ba211ef9b56.png/480x480/quality/100/canal-premier-league.png'},
+ {id:'CanalPlusSeries.fr',name:'Canal+ Series',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-1563.png'},
+ {id:'CanalPlusSport.ch',name:'Canal+ Sport',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/97364355?=.png'},
+ {id:'CanalPlusSport.fr',name:'Canal+ Sport',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~2b97b0fb1264c28d.png/480x480/quality/100/canal-sport.png'},
+ {id:'CanalPlusSport360.fr',name:'Canal+ Sport 360',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c883cdc8949cc276.png/480x480/quality/100/canal-sport-360.png'},
+ {id:'CanalPlusUHD.fr',name:'Canal+ UHD',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/71805593?=.png'},
+ {id:'CanalSavoir.ca',name:'Canal Savoir',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s15747_h15_ac.png'},
+ {id:'CanalVie.ca',name:'Canal Vie',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s17589_h15_ac.png'},
+ {id:'CanalZoom.be',name:'Canal Zoom',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Canal_Zoom_logo.png/1200px-Canal_Zoom_logo.png'},
+ {id:'CanalpartageTNTIDF.fr',name:'Canal Partagé TNT IDF',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~bcc7f89e9900f3ea.png/480x480/quality/100/canal-partage-tnt-ile-de-france.png'},
+ {id:'Canvas.fr',name:'Canvas',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~86a0a6b6ce187d6b.png/480x480/quality/100/canvas.png'},
+ {id:'CartoonNetwork.fr',name:'Cartoon Network',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~98316e754a46584c.png/480x480/quality/100/cartoon-network.png'},
+ {id:'Casa.ca',name:'Casa',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s75721_h15_ab.png'},
+ {id:'ChaineEvenement.fr',name:'Chaine Evenement',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/289/canal-ouah/CHN43FB/CHN43FB_289_20190201?=.png'},
+ {id:'ChasseEtPeche.fr',name:'Chasse et Pêche',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1da0d9af361d68eb.png/480x480/quality/100/chasse-et-peche.png'},
+ {id:'Cherie25.fr',name:'RMC Life',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~91bf2b7762746d0c.png/480x480/quality/100/rmc-life.png'},
+ {id:'ChevalTV.fr',name:'Cheval TV',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1182/canal-ouah/CHN43FB/CHN43FB_1182_20251013-UlME?=.png'},
+ {id:'CinePlusClassic.be',name:'Ciné+ Classic (Belgique)',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-437.png'},
+ {id:'CinePlusClassic.fr',name:'Ciné+ Classic',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~2d69cbbd735c68d3.png/480x480/quality/100/cine-classic.png'},
+ {id:'CinePlusClub.fr',name:'Ciné+ Festival',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1bda9959c4080bd1.png/480x480/quality/100/cine-club.png'},
+ {id:'CinePlusClub.frdrom',name:'CINE+ Festival',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160024/canal-ouah/CHN43FB/cinefestival_CHN43FN-SV3n?=.png'},
+ {id:'CinePlusEmotion.fr',name:'Ciné+ Emotion',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a4315e8ee099e046.png/480x480/quality/100/cine-emotion.png'},
+ {id:'CinePlusFamiz.fr',name:'Ciné+ Family',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~aa3a208e4af5aa5c.png/480x480/quality/100/cine-famiz.png'},
+ {id:'CinePlusFrisson.be',name:'Ciné+ Frisson (Belgique)',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/3/3d/CinePlusFrisson.svg/1280px-CinePlusFrisson.svg.png'},
+ {id:'CinePlusFrisson.ch',name:'Ciné+ Frisson',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/830/canal-ouah/CHN43FB/640x480-vzqO?=.png'},
+ {id:'CinePlusFrisson.fr',name:'Ciné+ Frisson',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~75b212bb20dd0d9f.png/480x480/quality/100/cine-frisson.png'},
+ {id:'CinePlusPremier.be',name:'Ciné+ Premier (Belgique)',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-294.png'},
+ {id:'CinePlusPremier.ch',name:'OCS (Suisse)',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/829/canal-ouah/CHN43FB/640x480-UEkF?=.png'},
+ {id:'CinePlusPremier.fr',name:'OCS',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~7246bab97d61b8e2.png/480x480/quality/100/cine-premier.png'},
+ {id:'CinePop.ca',name:'CinePop',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s49195_h6_aa.png'},
+ {id:'Classic21.be',name:'Classic21',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/6/68/Classic21.svg/1028px-Classic21.svg.png'},
+ {id:'Classica.fr',name:'Classica',logo:'https://upload.wikimedia.org/wikipedia/commons/b/b0/Logo_Classica_bandeau_noir.jpg'},
+ {id:'ClubRTL.be',name:'Club RTL',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~3891d0661b7ffc86.png/480x480/quality/100/club-rtl.png'},
+ {id:'ClubbingTV.fr',name:'ClubbingTV',logo:'https://upload.wikimedia.org/wikipedia/fr/3/39/Clubbing_TV.png'},
+ {id:'ComediePlus.fr',name:'Comedie+',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~b419616020702bc2.png/480x480/quality/100/comedie.png'},
+ {id:'ComedyCentral.fr',name:'Comedy Central',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~9c61401af35f66ed.png/480x480/quality/100/comedy-central.png'},
+ {id:'CrimeDistrict.fr',name:'Crime District',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1bcbad6f4e80e540.png/480x480/quality/100/crime-district.png'},
+ {id:'DAZN.fr',name:'DAZN 1',logo:'https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/1077/canal-ouah/CHN43FB/CHN43FB_1077_20231002'},
+ {id:'DAZN2.fr',name:'DAZN 2',logo:'https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/1155/canal-ouah/CHN43FB/CHN43FN_1155_20240813-FjVl'},
+ {id:'DAZN3.fr',name:'DAZN 3',logo:'https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/1156/canal-ouah/CHN43FB/CHN43FN_1156_20240813-UxAQ'},
+ {id:'DAZN4.fr',name:'DAZN 4',logo:'https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/1157/canal-ouah/CHN43FB/CHN43FN_1157_20240904-VPvq'},
+ {id:'DAZN5.fr',name:'DAZN 5',logo:'https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/1158/canal-ouah/CHN43FB/CHN43FN_1158_20240904-4nWl'},
+ {id:'DJAZ.fr',name:'DJAZ'},
+ {id:'DemainTV.fr',name:'DemainTV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~effa4114de086963.png/480x480/quality/100/demain-tv.png'},
+ {id:'DiciTvAlpes.fr',name:'BFM DICI ALPES DU SUD',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~839817d4dece5460.png/480x480/quality/100/bfm-dici-alpes-du-sud.png'},
+ {id:'DiciTvProvence.fr',name:'BFM DICI HAUTE-PROVENCE',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~80b0472d341b708b.png/480x480/quality/100/bfm-dici-haute-provence.png'},
+ {id:'DiscoveryChannel.fr',name:'Discovery Channel',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~14a98ca33c9c2ff1.png/480x480/quality/100/discovery-channel.png'},
+ {id:'DiscoveryInvestigation.fr',name:'Discovery Investigation',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1098/canal-ouah/CHN43FB/CHN43FB_1098_20240611-nQTl?=.png'},
+ {id:'DiscoveryScience.fr',name:'TLC',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1097/canal-ouah/CHN43FB/CHN43FB_1097_20240611-L4JP?=.png'},
+ {id:'DisneyChannel.be',name:'Disney Channel (Belgique)',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6b23af5e1d6f830a.png/480x480/quality/100/disney-channel-wallonia.png'},
+ {id:'DisneyChannel.fr',name:'Disney Channel',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~ab11120cc94674c8.png/480x480/quality/100/disney-channel.png'},
+ {id:'DisneyChannelPlus1.fr',name:'DisneyChannelPlus1',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-299.png'},
+ {id:'DisneyJunior.be',name:'Disney Junior (Belgique)',logo:'https://upload.wikimedia.org/wikipedia/fr/thumb/8/82/Disney_Junior_logo_2019.png/640px-Disney_Junior_logo_2019.png'},
+ {id:'DisneyJunior.fr',name:'Disney Junior',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a8f41a637b5bb2b8.png/480x480/quality/100/disney-junior.png'},
+ {id:'DisneyPlus.fr',name:'Disney+',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-2974.png'},
+ {id:'DisneyXD.fr',name:'Disney XD',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Logo_Disney_XD.svg/1200px-Logo_Disney_XD.svg.png'},
+ {id:'DobbitTVF.be',name:'DobbitTVF.be'},
+ {id:'DorcelTV.fr',name:'DorcelTV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~2898c319dac724e0.png/480x480/quality/100/dorcel-tv.png'},
+ {id:'DorcelXXX.fr',name:'DorcelXXX',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~4e6b99c37c6e02b6.png/480x480/quality/100/dorcel-xxx.png'},
+ {id:'Dreamworks.fr',name:'DREAMWORKS',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/DREAMWORKS100x100.png'},
+ {id:'DriveInMovieChannel.fr',name:'DriveInMovieChannel.fr'},
+ {id:'EEntertainment.fr',name:'E! Entertainment',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~935480ccb24320a7.png/480x480/quality/100/e.png'},
+ {id:'ES1.fr',name:'MGG TV',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/819/canal-ouah/CHN43FB/CHN43FB_819_20220127?=.png'},
+ {id:'EVENEMENTALACARTE.fr',name:'EVENEMENTALACARTE.fr'},
+ {id:'ElevenProL1.be',name:'ElevenProL1'},
+ {id:'ElevenProL2.be',name:'ElevenProL2'},
+ {id:'ElevenProL3.be',name:'ElevenProL3'},
+ {id:'ElevenSports1FR.be',name:'ElevenSports1FR',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtj3ecOZjY8i7UiiyCF5GT1dQzUMgYAXorRMcZIWswqwbgrODBxHb_qHCgZA&s'},
+ {id:'ElevenSports2FR.be',name:'ElevenSports2FR',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQiWkZqXWuB5DwJtVjjNJ-HJd3OAOq5jR2j35n_yiofD2ZEBrLkvqFzSjfHiVs&s'},
+ {id:'ElevenSports3FR.be',name:'ElevenSports3FR',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQiWkZqXWuB5DwJtVjjNJ-HJd3OAOq5jR2j35n_yiofD2ZEBrLkvqFzSjfHiVs&s'},
+ {id:'ElleGirl.fr',name:'ElleGirl',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYXh9iY0Xbt-lY8J6SajBoJMrgCKkClrJJuFPiX8dV8Z3FAq8uvQCrJZ0gM9g&s'},
+ {id:'EnquetesCriminelles2424.fr',name:'Enquetes Criminelles 24/24',logo:'https://i.imgur.com/BhT1VQo.png'},
+ {id:'Equidia.fr',name:'Equidia',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~cef3a55acddd13b3.png/480x480/quality/100/equidia.png'},
+ {id:'Eurochannel.fr',name:'Eurochannel',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~34df6f95d8064751.png/480x480/quality/100/eurochannel.png'},
+ {id:'Euronews.fr',name:'Euronews',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~648eb1fd8a151da0.png/480x480/quality/100/euronews.png'},
+ {id:'Europe1TV.fr',name:'Europe 1 TV',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1173/canal-ouah/CHN43FB/CHN43FB_1173_20251210-Vb4L?=.png'},
+ {id:'Eurosport1.fr',name:'Eurosport 1',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~277882f801bd3f7b.png/480x480/quality/100/eurosport-1.png'},
+ {id:'Eurosport2.fr',name:'Eurosport 2',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~196acf0142c66a68.png/480x480/quality/100/eurosport-2.png'},
+ {id:'Eurosport3601.fr',name:'Eurosport 360 - 1',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/635/canal-ouah/CHN43FB/CHN43FB_635_20220110?=.png'},
+ {id:'Eurosport36010.fr',name:'EUROSPORT 360 10',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1106/canal-ouah/CHN43FB/CHN43FB_1106_07162024-6UID?=.png'},
+ {id:'Eurosport36011.fr',name:'EUROSPORT 360 11',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1107/canal-ouah/CHN43FB/CHN43FB_1107_20240716-EUam?=.png'},
+ {id:'Eurosport36012.fr',name:'EUROSPORT 360 12',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1108/canal-ouah/CHN43FB/CHN43FB_1108_20240716-n2Ka?=.png'},
+ {id:'Eurosport36013.fr',name:'EUROSPORT 360 13',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1109/canal-ouah/CHN43FB/CHN43FB_1109_20240716-fSFm?=.png'},
+ {id:'Eurosport36014.fr',name:'EUROSPORT 360 14',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1110/canal-ouah/CHN43FB/CHN43FB_1110_20240716-f6IO?=.png'},
+ {id:'Eurosport36015.fr',name:'EUROSPORT 360 15',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1111/canal-ouah/CHN43FB/CHN43FB_1111_20240716-3r9K?=.png'},
+ {id:'Eurosport36016.fr',name:'EUROSPORT 360 16',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1112/canal-ouah/CHN43FB/CHN43FB_1112_20240716-lUDu?=.png'},
+ {id:'Eurosport36017.fr',name:'EUROSPORT 360 17',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1113/canal-ouah/CHN43FB/CHN43FB_1113_20240716-Pe37?=.png'},
+ {id:'Eurosport36018.fr',name:'EUROSPORT 360 18',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1114/canal-ouah/CHN43FB/CHN43FB_1114_20240716-nqxZ?=.png'},
+ {id:'Eurosport36019.fr',name:'EUROSPORT 360 19',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1115/canal-ouah/CHN43FB/CHN43FB_1115_20240716-D8vX?=.png'},
+ {id:'Eurosport3602.fr',name:'Eurosport 360 - 2',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/636/canal-ouah/CHN43FB/CHN43FB_636_20220110?=.png'},
+ {id:'Eurosport36020.fr',name:'EUROSPORT 360 20',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1116/canal-ouah/CHN43FB/CHN43FB_1116_20240716-hsgw?=.png'},
+ {id:'Eurosport36021.fr',name:'EUROSPORT 360 21',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1117/canal-ouah/CHN43FB/CHN43FB_1117_20240716-rb-2?=.png'},
+ {id:'Eurosport36022.fr',name:'EUROSPORT 360 22',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1118/canal-ouah/CHN43FB/CHN43FB_1118_20240716-yywV?=.png'},
+ {id:'Eurosport36023.fr',name:'EUROSPORT 360 23',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1119/canal-ouah/CHN43FB/CHN43FB_1119_20240716-FnEO?=.png'},
+ {id:'Eurosport36024.fr',name:'EUROSPORT 360 24',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1120/canal-ouah/CHN43FB/CHN43FB_1120_20240716-6Qxy?=.png'},
+ {id:'Eurosport36025.fr',name:'EUROSPORT 360 25',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1121/canal-ouah/CHN43FB/CHN43FB_1121_20240716--qBr?=.png'},
+ {id:'Eurosport36026.fr',name:'EUROSPORT 360 26',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1122/canal-ouah/CHN43FB/CHN43FB_1122_20240716-_IFA?=.png'},
+ {id:'Eurosport36027.fr',name:'EUROSPORT 360 27',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1123/canal-ouah/CHN43FB/CHN43FB_1123_20240716-uSCT?=.png'},
+ {id:'Eurosport36028.fr',name:'EUROSPORT 360 28',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1124/canal-ouah/CHN43FB/CHN43FB_1124_20240716-wJaD?=.png'},
+ {id:'Eurosport36029.fr',name:'EUROSPORT 360 29',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1125/canal-ouah/CHN43FB/CHN43FB_1125_20240716-K5nb?=.png'},
+ {id:'Eurosport3603.fr',name:'Eurosport 360 - 3',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/637/canal-ouah/CHN43FB/CHN43FB_637_20220110?=.png'},
+ {id:'Eurosport36030.fr',name:'EUROSPORT 360 30',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1126/canal-ouah/CHN43FB/CHN43FB_1126_20240716-uog7?=.png'},
+ {id:'Eurosport36031.fr',name:'EUROSPORT 360 31',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1127/canal-ouah/CHN43FB/CHN43FB_1127_20240716-aJ7F?=.png'},
+ {id:'Eurosport36032.fr',name:'EUROSPORT 360 32',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1128/canal-ouah/CHN43FB/CHN43FB_1128_20240716-W6KX?=.png'},
+ {id:'Eurosport3604.fr',name:'Eurosport 360 - 4',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/638/canal-ouah/CHN43FB/CHN43FB_638_20220110?=.png'},
+ {id:'Eurosport3605.fr',name:'Eurosport 360 - 5',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/650/canal-ouah/CHN43FB/CHN43FB_650_20220110?=.png'},
+ {id:'Eurosport3606.fr',name:'Eurosport 360 - 6',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/651/canal-ouah/CHN43FB/CHN43FB_651_20220110?=.png'},
+ {id:'Eurosport3607.fr',name:'Eurosport 360 - 7',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/652/canal-ouah/CHN43FB/CHN43FB_652_20220110?=.png'},
+ {id:'Eurosport3608.fr',name:'Eurosport 360 - 8',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/653/canal-ouah/CHN43FB/CHN43FB_653_20220110?=.png'},
+ {id:'Eurosport3609.fr',name:'EUROSPORT 360 9',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1105/canal-ouah/CHN43FB/CHN43FB_1105_07162024-YTyZ?=.png'},
+ {id:'EurosportInternational1.fr',name:'Eurosport International 1',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/101/canal-ouah/CHN43FB/CHN43FB_101_20220110?=.png'},
+ {id:'Evasion.ca',name:'Evasion',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s21545_h15_ab.png'},
+ {id:'EvenementsSports4KUHD.fr',name:'Evenements Sports 4K UHD',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/74042707?=.png'},
+ {id:'FashionTV.fr',name:'Fashion TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~90cf553801cecc51.png/480x480/quality/100/fashion-tv.png'},
+ {id:'Festival.be',name:'Festival',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvyNnagV3fqn7iDCJN2Q9iOi5vK58HEMLnDk_HILp-QDW2L7jJJRMHV7reMg&amp;s'},
+ {id:'FightSports.fr',name:'FightSports.fr'},
+ {id:'France2.fr',name:'France 2',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~606394a5b095653a.png/480x480/quality/100/france-2.png'},
+ {id:'France24.fr',name:'France 24',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~afbbeba076c073d9.png/480x480/quality/100/france-24.png'},
+ {id:'France3.fr',name:'France 3',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~61eebbb6e38360ae.png/480x480/quality/100/france-3.png'},
+ {id:'France3Alpes.fr',name:'France 3 - Alpes',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~2cacda0b07c6858e.png/480x480/quality/100/france-3-alpes.png'},
+ {id:'France3Alsace.fr',name:'France 3 - Alsace',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~7dfc89e4cd29fbd3.png/480x480/quality/100/france-3-alsace.png'},
+ {id:'France3Aquitaine.fr',name:'France 3 - Aquitaine',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~8af372dffa51ee4c.png/480x480/quality/100/france-3-aquitaine.png'},
+ {id:'France3Auvergne.fr',name:'France 3 - Auvergne',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1c887afd8ce7eb5f.png/480x480/quality/100/france-3-auvergne.png'},
+ {id:'France3BasseNormandie.fr',name:'France 3 - Basse-Normandie',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~814af4b7715d3d58.png/480x480/quality/100/france-3-basse-normandie.png'},
+ {id:'France3Bourgogne.fr',name:'France 3 - Bourgogne',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~69fb2d5a2234547b.png/480x480/quality/100/france-3-bourgogne.png'},
+ {id:'France3Bretagne.fr',name:'France 3 - Bretagne',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~8da92d1f212b1764.png/480x480/quality/100/france-3-bretagne.png'},
+ {id:'France3Centre.fr',name:'France 3 - Centre',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~8dc26949f4b66350.png/480x480/quality/100/france-3-centre-val-de-loire.png'},
+ {id:'France3ChampagneArdenne.fr',name:'France 3 - Champagne-Ardenne',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~55217eb171884358.png/480x480/quality/100/france-3-champagne-ardennes.png'},
+ {id:'France3CorseViaStella.fr',name:'France 3 - Corse',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~b677a630de9bbb79.png/480x480/quality/100/france-3-corse-via-stella.png'},
+ {id:'France3CotedAzur.fr',name:"France 3 - Côte d'Azur",logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a9955aa0f14cc358.png/480x480/quality/100/france-3-cote-d-azur.png'},
+ {id:'France3FrancheComte.fr',name:'France 3 - Franche-Comté',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~11026d6bed70ed33.png/480x480/quality/100/france-3-franche-comte.png'},
+ {id:'France3HauteNormandie.fr',name:'France 3 - Haute-Normandie',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~353085acfcc91c37.png/480x480/quality/100/france-3-haute-normandie.png'},
+ {id:'France3Languedoc.fr',name:'France 3 - Languedoc',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6ef25317dfdada38.png/480x480/quality/100/france-3-languedoc-roussillon.png'},
+ {id:'France3Limousin.fr',name:'France 3 - Limousin',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~fb65aa2ce9ac4b73.png/480x480/quality/100/france-3-limousin.png'},
+ {id:'France3Lorraine.fr',name:'France 3 - Lorraine',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~5a8f9c7ccee59a7b.png/480x480/quality/100/france-3-lorraine.png'},
+ {id:'France3MidiPyrenees.fr',name:'France 3 - Midi-Pyrénées',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~98420a88ec7af3ed.png/480x480/quality/100/france-3-midi-pyrenees.png'},
+ {id:'France3NordPasDeCalais.fr',name:'France 3 - Nord Pas-de-Calais',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6bfa69e654993fe6.png/480x480/quality/100/france-3-nord-pas-de-calais.png'},
+ {id:'France3NouvelleAquitaine.fr',name:'France 3 Nouvelle Aquitaine',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/998/canal-ouah/CHN43FB/CHN43FB_998_20220112?=.png'},
+ {id:'France3ParisIdF.fr',name:'France 3 - Paris Ile-de-France',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~12c7d1a5646604f3.png/480x480/quality/100/france-3-paris-ile-de-france.png'},
+ {id:'France3PaysDeLaLoire.fr',name:'France 3 - Pays de Loire',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a7f082fc81cbba07.png/480x480/quality/100/france-3-pays-de-la-loire.png'},
+ {id:'France3Picardie.fr',name:'France 3 - Picardie',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~38a48a051fc09e26.png/480x480/quality/100/france-3-picardie.png'},
+ {id:'France3PoitouCharentes.fr',name:'France 3 - Poitou-Charentes',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~e036cd7509a4f4b5.png/480x480/quality/100/france-3-poitou-charentes.png'},
+ {id:'France3ProvenceAlpes.fr',name:'France 3 - Provence Alpes',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~bb4195282d659a86.png/480x480/quality/100/france-3-provence-alpes.png'},
+ {id:'France3RhoneAlpes.fr',name:'France 3 - Rhône-Alpes',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~58f0562b1a91ef1d.png/480x480/quality/100/france-3-rhone-alpes.png'},
+ {id:'France4.fr',name:'France 4',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~e02946cfb82e5310.png/480x480/quality/100/france-4.png'},
+ {id:'France5.fr',name:'France 5',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~5f611b705ca3f017.png/480x480/quality/100/france-5.png'},
+ {id:'FranceInfo.fr',name:'franceinfo:',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~367eff2d23ab1357.png/480x480/quality/100/franceinfo.png'},
+ {id:'FranceTVDocs.fr',name:'France TV Docs',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1159/canal-ouah/CHN43FB/CHN43FB_1159_20260106--waH?=.png'},
+ {id:'FranceTVSeries.fr',name:'France TV S&eacute;ries',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1092/canal-ouah/CHN43FB/CHN43FB_1092_20260126-de3E?=.png'},
+ {id:'FrissonsTV.ca',name:'Frissons TV',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s105852_h15_aa.png'},
+ {id:'GameOne.fr',name:'Game One',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-87.png'},
+ {id:'GameOneplus1.fr',name:'Game One +1',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/Game_One_1_color.png'},
+ {id:'Ginx.fr',name:'Ginx',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c26394113a939abd.png/480x480/quality/100/ginx.png'},
+ {id:'GolfPlus.fr',name:'Golf+',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~222f4c51ddee1398.png/480x480/quality/100/golf.png'},
+ {id:'Gong.fr',name:'Gong.fr'},
+ {id:'GongMax.fr',name:'GongMax',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~419233d56dacf793.png/480x480/quality/100/gong-max.png'},
+ {id:'Guadeloupe1.fr',name:'Guadeloupe 1ère',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/150083/canal-ouah/CHN43FB/GUADELOUPE_1ER_FB_myCANAL_640x480?=.png'},
+ {id:'Gulli.fr',name:'Gulli',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~059a8175b83117fd.png/480x480/quality/100/gulli.png'},
+ {id:'Guyane1.fr',name:'Guyane 1ère',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/150084/canal-ouah/CHN43FB/GUYANE_1ER_FB_myCANAL_640x480?=.png'},
+ {id:'HLive.fr',name:'HLive.fr'},
+ {id:'Histoire.fr',name:'Histoire',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~354060da3ea6eca2.png/480x480/quality/100/histoire-tv.png'},
+ {id:'HustlerTV.fr',name:'HustlerTV',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQHxXzjWCiYyTd4mP_cZ0wX7VOvLT8XNMOexvklc7BxNRFW8rbOEP9qyZ55TJE&amp;s'},
+ {id:'I24news.fr',name:'i24 news',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~9c9fab3a99e71b53.png/480x480/quality/100/i24news.png'},
+ {id:'ICIARTV.ca',name:'ICI ARTV',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSL_IIYjpK-JpY1z691-eH5z2Iqk5BEz5DjHJ2iArXnjuKfaVZAhy1nGJyDKI0&amp;s'},
+ {id:'ICIExplora.ca',name:'ICI Explora',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s75053_h9_aa.png'},
+ {id:'IDF1.fr',name:'20 Minutes TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~cd8973767ef8796c.png/480x480/quality/100/20-minutes-tv.png'},
+ {id:'ILTV.fr',name:'IL TV',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/IL_TV_color.png'},
+ {id:'IncroyablesTransformations2424.fr',name:'Incroyables Transformations 24/24',logo:'https://i.imgur.com/tHI2Ewu.png'},
+ {id:'InfosportPlus.fr',name:'InfosportPlus',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~fa910210e6776e9a.png/480x480/quality/100/infosport.png'},
+ {id:'Investigation.ca',name:'Investigation',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s87899_h15_ac.png'},
+ {id:'JOne.fr',name:'J-One',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-1585.png'},
+ {id:'KANAALZ.be',name:'KANAALZ',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzjOkiRSrN9WtxQwS_yfc0YilHxDl3dLqmE0TDHp57ayGsGX25e1pT4fwuyg&amp;s'},
+ {id:'KTO.fr',name:'KTO',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1f0a26a873b15a88.png/480x480/quality/100/kto.png'},
+ {id:'Ketnet.be',name:'Ketnet',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~ceff3f6a3454e7b7.png/480x480/quality/100/ketnet.png'},
+ {id:'KetnetCanvas.be',name:'KetnetCanvas',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpCzQGaETdejE-NT7weLYrKSwq_KF8f0H6Y2n57GLbVS_L2wGAqesv9l23izg&amp;s'},
+ {id:'LCI.fr',name:'LCI',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1314d39cfeea2a5c.png/480x480/quality/100/lci-la-chaine-info.png'},
+ {id:'LCN.ca',name:'LCN',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s17590_h15_ad.png'},
+ {id:'LCP100.fr',name:'LCP-AN 24/24',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/LCP_AN_24_24_color.png'},
+ {id:'LEquipe21.fr',name:'La chaine l’Équipe',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~060edf53b072af43.png/480x480/quality/100/l-equipe.png'},
+ {id:'LEquipeLive1.fr',name:"L'Equipe Live 1",logo:'https://i.imgur.com/vxoiXmc.png'},
+ {id:'LEquipeLive2.fr',name:"L'Equipe Live 2",logo:'https://i.imgur.com/vxoiXmc.png'},
+ {id:'LEquipeLive3.fr',name:"L'Equipe Live 3",logo:'https://i.imgur.com/vxoiXmc.png'},
+ {id:'LEquipeLive4.fr',name:"L'Equipe Live 4",logo:'https://i.imgur.com/vxoiXmc.png'},
+ {id:'LEquipeLive5.fr',name:"L'Equipe Live 5",logo:'https://i.imgur.com/vxoiXmc.png'},
+ {id:'LEquipeLive6.fr',name:"L'Equipe Live 6",logo:'https://i.imgur.com/vxoiXmc.png'},
+ {id:'LEquipeLive7.fr',name:"L'Equipe Live 7",logo:'https://i.imgur.com/vxoiXmc.png'},
+ {id:'LEquipeLiveFoot.fr',name:"L'Equipe Live Foot",logo:'https://i.imgur.com/vxoiXmc.png'},
+ {id:'LEspritSorcier.fr',name:'LEspritSorcier.fr'},
+ {id:'LFMTV.ch',name:'CARAC 3 HD',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/879/canal-ouah/CHN43FB/CARAC3?=.png'},
+ {id:'LMTVSarthe.fr',name:'LMtv Sarthe',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6db902fe1c335a98.png/480x480/quality/100/lm-tv-sarthe.png'},
+ {id:'LN24.be',name:'LN24.be'},
+ {id:'LaChaineMeteo.fr',name:'LaChaineMeteo',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~cdd331aeb0c20b3e.png/480x480/quality/100/la-chaine-meteo.png'},
+ {id:'LaChaineNormande.fr',name:'BFM NORMANDIE',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~91ef926478b318cb.png/480x480/quality/100/la-chaine-normande.png'},
+ {id:'LaChaineParlementaire.fr',name:'LCP',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~080eb27517dd16c6.png/480x480/quality/100/la-chaine-parlementaire.png'},
+ {id:'LaDeux.be',name:'Tipik',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~0018a91b503e458f.png/480x480/quality/100/tipik.png'},
+ {id:'LaPremiere.be',name:'La Premiere',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQMS6euFCcMuM0n9o1xeaifCI_ExIP1MPpw_T7D9KSZHGDfY8kXIakUDrQJbQM&amp;s'},
+ {id:'LaTele.ch',name:'La Télé',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/80452686?=.png'},
+ {id:'LaTrois.be',name:'La Trois',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~eb79eb0d09f03e3c.png/480x480/quality/100/la-trois.png'},
+ {id:'LaUne.be',name:'La Une',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~224690346063da36.png/480x480/quality/100/la-une.png'},
+ {id:'LemanBleu.ch',name:'Léman Bleu',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/93091827?=.png'},
+ {id:'LesMarseillais2424.fr',name:'Les Marsellais 24/24',logo:'https://i.imgur.com/eI9fjaY.png'},
+ {id:'LesReinesDuShopping2424.fr',name:'Les Reines du Shopping 24/24',logo:'https://i.imgur.com/NiIDN66.png'},
+ {id:'Ligue1Plus.fr',name:'Ligue 1+',logo:'https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png'},
+ {id:'Ligue1Plus10.fr',name:'Ligue 1+ 10',logo:'https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png'},
+ {id:'Ligue1Plus2.fr',name:'Ligue 1+ 2',logo:'https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png'},
+ {id:'Ligue1Plus3.fr',name:'Ligue 1+ 3',logo:'https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png'},
+ {id:'Ligue1Plus4.fr',name:'Ligue 1+ 4',logo:'https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png'},
+ {id:'Ligue1Plus5.fr',name:'Ligue 1+ 5',logo:'https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png'},
+ {id:'Ligue1Plus6.fr',name:'Ligue 1+ 6',logo:'https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png'},
+ {id:'Ligue1Plus7.fr',name:'Ligue 1+ 7',logo:'https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png'},
+ {id:'Ligue1Plus8.fr',name:'Ligue 1+ 8',logo:'https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png'},
+ {id:'Ligue1Plus9.fr',name:'Ligue 1+ 9',logo:'https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png'},
+ {id:'LuckyJack.fr',name:'Lucky Jack',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/Lucky_Jack_color.png'},
+ {id:'LuxeTV.fr',name:'Luxe TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1f30e3d55096de3b.png/480x480/quality/100/luxe-tv.png'},
+ {id:'LyonTV.fr',name:'Lyon Capitale TV',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/lyoncapitaletv1100x100couleur.png'},
+ {id:'M6.fr',name:'M6',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~46c2dbade9ac9fed.png/480x480/quality/100/m6.png'},
+ {id:'M6International.fr',name:'M6 INTERNATIONAL',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s116290_h15_ab.png'},
+ {id:'M6Music.fr',name:'M6 Music',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~b4eb6aa19b3ef5f1.png/480x480/quality/100/m6-music.png'},
+ {id:'MATV.ca',name:'MATV',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmXv1CWZz_XSNQo4iGlbEogR_HcZJ_vW8trU5D5i5tbPzdT8McTG0fyK9AFKY&amp;s'},
+ {id:'MAX.ca',name:'MAX',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s17591_h15_aa.png'},
+ {id:'MCM.fr',name:'MCM',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~9f3991bdc4b3b017.png/480x480/quality/100/mcm.png'},
+ {id:'MCMTop.fr',name:'MCM Top',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~2d0f105d5d08b651.png/480x480/quality/100/mcm-top.png'},
+ {id:'METEO.ca',name:'METEO',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s16000_h15_aa.png'},
+ {id:'MFMTV.fr',name:'MFMTV.fr'},
+ {id:'MTV.fr',name:'MTV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~12551345857d7548.png/480x480/quality/100/mtv.png'},
+ {id:'MTV00s.fr',name:'MTV00s.fr'},
+ {id:'MTV80s.fr',name:'MTV80s.fr'},
+ {id:'MTV90’s.fr',name:'MTV90’s.fr'},
+ {id:'MTVDance.fr',name:'MTV Dance',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTE90sJgXdYMjiql2lQixPjzc93ebuewQN4M9Ebi8wv0akl7hcxoyGBRm56cA&amp;s'},
+ {id:'MTVHits.fr',name:'MTV Hits',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/MTVHITSlogonoir100x100.png'},
+ {id:'MTVRocks.fr',name:'MTV Rocks',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTD7fcvXQKoOF10r_ukFfg14GymSHvnEKy2UldAWDfb2ld1WHrbT1zw4dhQf7s&amp;s'},
+ {id:'MaTele.be',name:'MaTele',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQU-fw_3XheZXvJcMifXn55ypj6IQI0IIgNL1zhQjptujNtglQJQaAbhOLA2pA&amp;s'},
+ {id:'MaisonEtTravaux.fr',name:'MaisonEtTravaux.fr'},
+ {id:'ManX.fr',name:'ManX',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/41071287?=.png'},
+ {id:'MandarinTV.fr',name:'MandarinTV.fr'},
+ {id:'Mangas.fr',name:'Mangas',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a624ee4f7be827c4.png/480x480/quality/100/mangas.png'},
+ {id:'MaritimaTV.fr',name:'Maritima TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6261975a3ed0433b.png/480x480/quality/100/maritima-tv.png'},
+ {id:'MarmitonTV.fr',name:'Marmiton TV',logo:'https://freebox.cdn.scw.iliad.fr/large_Logo_Marmiton_TV_bis_8e336d6d66.png'},
+ {id:'Martinique1.fr',name:'Martinique 1ère',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/150085/canal-ouah/CHN43FB/MARTINIQUE_1ER_FB_myCANAL_640x480?=.png'},
+ {id:'MaurienneTV.fr',name:'MAURIENNE TV',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/mauriennetv100x100.png'},
+ {id:'Mayotte1.fr',name:'Mayotte 1ère',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160206/canal-ouah/CHN43FB/MAYOTTE_1ERE_FB_myCANAL_640x480?=.png'},
+ {id:'Melody.fr',name:'MELODY TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~627c155dadd4f6ca.png/480x480/quality/100/melody.png'},
+ {id:'MensUpTV.fr',name:"Men's Up TV",logo:'https://www.programme-tv.net/imgre/fit/~2~channel~83697ac19b2ac67d.png/480x480/quality/100/men-s-up.png'},
+ {id:'Mezzo.fr',name:'Mezzo',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~f9c76c49decc08ac.png/480x480/quality/100/mezzo.png'},
+ {id:'MezzoLive.fr',name:'Mezzo Live HD',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/268/canal-ouah/CHN43FB/NEW_MEZZOLIVE_FN_BLANC_myCANAL_640x480?=.png'},
+ {id:'MezzoLiveHD.fr',name:'MezzoLiveHD',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~2b4c3e46620b9d00.png/480x480/quality/100/mezzo-live-hd.png'},
+ {id:'MirabelleTV.fr',name:'VIA Mirabelle',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/VIA_Mirabelle_color.png'},
+ {id:'Mosaik.fr',name:'Mosaïk Cristal',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/Mosaik_color.png'},
+ {id:'MosaikCristal.fr',name:'MosaikCristal.fr'},
+ {id:'MotorVisionTV.fr',name:'MotorVision TV',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQuEKF4mLTy1d2W3Jw4NQR47ODPSzbhQkjli_roOyw8xlF7pJsf-8jbcXwY3iI&amp;s'},
+ {id:'Museum.fr',name:'MUSEUM TV',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/95900534?=.png'},
+ {id:'MyZenTV.fr',name:'My Zen TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~ec3f9d3c15d50776.png/480x480/quality/100/myzen-tv.png'},
+ {id:'NATV.fr',name:'NA TV',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/NATV100x100couleur.png'},
+ {id:'NOVO19.fr',name:'NOVO19',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~113b817bb2e5c3a6.png/480x480/quality/100/novo19.png'},
+ {id:'NRJHits.fr',name:'NRJ Hits',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~5fcf445d3654fc44.png/480x480/quality/100/nrj-hits.png'},
+ {id:'NT1.fr',name:'TFX',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~71e551462d6114e5.png/480x480/quality/100/tfx.png'},
+ {id:'NatGeoWild.fr',name:'NatGeoWild',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~14a37deb1ba9efc4.png/480x480/quality/100/nat-geo-wild.png'},
+ {id:'NationalGeographic.fr',name:'National Geographic',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c00912008deb7144.png/480x480/quality/100/national-geographic.png'},
+ {id:'NauticalChannel.fr',name:'Nautical Channel',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~20b8b9cb6d9c4582.png/480x480/quality/100/nautical-channel.png'},
+ {id:'NickJr.be',name:'NickJr',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSmV1CbNklnPFqiNlVehXPHig_jILmgTlFy656cTlxcxoYtIG6wM6Y0lbelvQ&amp;s'},
+ {id:'Nickelodeon.be',name:'Nickelodeon',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6981e80052f9f64d.png/480x480/quality/100/nickelodeon-wallonia.png'},
+ {id:'Nickelodeon.fr',name:'Nickelodeon',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~96073033160e9e0f.png/480x480/quality/100/nickelodeon.png'},
+ {id:'Nickelodeon4Teen.fr',name:'Nickelodeon Teen',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~46b4b009c1f49864.png/480x480/quality/100/nickelodeon-teen.png'},
+ {id:'NickelodeonJunior.fr',name:'Nickelodeon Junior',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~4978e09688e54ba3.png/480x480/quality/100/nickelodeon-junior.png'},
+ {id:'NickelodeonPlus1.fr',name:'NickelodeonPlus1.fr'},
+ {id:'Nickelodeonplus1.fr',name:'Nickelodeon+1',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/44923418?=.png'},
+ {id:'NinaNovelas.fr',name:'NinaNovelas.fr'},
+ {id:'NoTele.be',name:'NoTele',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSn5DeCglVcDc5jd-9ivBci4nCdZb9Qz4Qe68HyDF4s5lBfIp-Be7aD0-0_Fw&amp;s'},
+ {id:'NollywoodTV.fr',name:'Nollywood TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~9a6d17c67f4b3300.png/480x480/quality/100/nollywood-tv.png'},
+ {id:'NouvelleCaledonie.fr',name:'NouvelleCaledonie',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/170086/canal-ouah/CHN43FB/_thumb_526566?=.png'},
+ {id:'NovelasTV.fr',name:'NOVELAS',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~f3163a740d07c24f.png/480x480/quality/100/novelas-tv.png'},
+ {id:'Numero23.fr',name:'RMC STORY',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~56b83775344955b8.png/480x480/quality/100/rmc-story.png'},
+ {id:'OLTV.fr',name:'OLPLAY',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~289e3217baa702c7.png/480x480/quality/100/oltv.png'},
+ {id:'ONETV.ch',name:'CARAC 2 CH HD',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/880/canal-ouah/CHN43FB/CARAC2?=.png'},
+ {id:'OlympiaTV.fr',name:'OlympiaTV',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/93985302?=.png'},
+ {id:'PIWI.fr',name:'Piwi+',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c35f8535cf204eb6.png/480x480/quality/100/piwi.png'},
+ {id:'PLANETEJustice.fr',name:'Planète+ Crime Investigation',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a17e094d24ee1484.png/480x480/quality/100/planete-crime-investigation.png'},
+ {id:'PalmaresADISQ.ca',name:'PalmaresADISQ',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s102689_h15_aa.png'},
+ {id:'ParamountChannel.fr',name:'Paramount Channel',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-1562.png'},
+ {id:'ParamountChannelDecale.fr',name:'Paramount Channel Décalé',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/Paramount_Channel_Decale_color.png'},
+ {id:'ParisPremiere.fr',name:'Paris Première',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~ecf598fd002ccb9a.png/480x480/quality/100/paris-premiere.png'},
+ {id:'PenthouseBlack.fr',name:'Penthouse Black',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSO3Q6HPCMdoQvtMB0bl17lfw2-uybgBaS9R9NMSmh5hwcAuJR_PkZ_IkUWfg&amp;s'},
+ {id:'PenthouseGold.fr',name:'PenthouseGold.fr'},
+ {id:'PenthousePassion.fr',name:'PenthousePassion.fr'},
+ {id:'PickxLiveF.be',name:'PickxLiveF.be'},
+ {id:'PickxLiveFHD.be',name:'PickxLiveFHD.be'},
+ {id:'PickxLiveN.be',name:'PickxLiveN.be'},
+ {id:'PickxPlusF.be',name:'PickxPlusF.be'},
+ {id:'PickxPlusN.be',name:'PickxPlusN.be'},
+ {id:'PickxPlusSports10N.be',name:'PickxPlusSports10N.be'},
+ {id:'PickxPlusSports1F.be',name:'PickxPlusSports1F.be'},
+ {id:'PickxPlusSports1N.be',name:'PickxPlusSports1N.be'},
+ {id:'PickxPlusSports2F.be',name:'PickxPlusSports2F.be'},
+ {id:'PickxPlusSports2N.be',name:'PickxPlusSports2N.be'},
+ {id:'PickxPlusSports3F.be',name:'PickxPlusSports3F.be'},
+ {id:'PickxPlusSports3N.be',name:'PickxPlusSports3N.be'},
+ {id:'PickxPlusSports4F.be',name:'PickxPlusSports4F.be'},
+ {id:'PickxPlusSports4N.be',name:'PickxPlusSports4N.be'},
+ {id:'PickxPlusSports5F.be',name:'PickxPlusSports5F.be'},
+ {id:'PickxPlusSports5N.be',name:'PickxPlusSports5N.be'},
+ {id:'PickxPlusSports6F.be',name:'PickxPlusSports6F.be'},
+ {id:'PickxPlusSports6N.be',name:'PickxPlusSports6N.be'},
+ {id:'PickxPlusSports7F.be',name:'PickxPlusSports7F.be'},
+ {id:'PickxPlusSports7N.be',name:'PickxPlusSports7N.be'},
+ {id:'PickxPlusSports8F.be',name:'PickxPlusSports8F.be'},
+ {id:'PickxPlusSports8N.be',name:'PickxPlusSports8N.be'},
+ {id:'PickxPlusSports9F.be',name:'PickxPlusSports9F.be'},
+ {id:'PickxPlusSports9N.be',name:'PickxPlusSports9N.be'},
+ {id:'PinkTV.fr',name:'PinkTV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~db1124e839974f97.png/480x480/quality/100/pink-tv.png'},
+ {id:'PinkX.fr',name:'PinkX',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/21523008?=.png'},
+ {id:'PlaneteAction.fr',name:'Planete+ Aventure',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~aa6befb976febe46.png/480x480/quality/100/planete-aventure-experience.png'},
+ {id:'PlanetePlus.fr',name:'Planete+',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~475677d45988adc5.png/480x480/quality/100/planete.png'},
+ {id:'PlanetePlusCA.ca',name:'Planete+ Canada',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s31323_h15_aa.png'},
+ {id:'PlayboyTV.fr',name:'PlayboyTV.fr'},
+ {id:'PlugRTL.be',name:'Plug RTL',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~b97d3ec813b50c9a.png/480x480/quality/100/plug-rtl.png'},
+ {id:'PolarPlus.fr',name:'Polar+',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~138de7b2386a5c10.png/480x480/quality/100/polar.png'},
+ {id:'Polynesie1.fr',name:'Polynesie 1ère',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/200046/canal-ouah/CHN43FB/PREMIEREPOLYNESIE_NOIR_myCANAL_640x480?=.png'},
+ {id:'ProvenceAzur.fr',name:'BFM MARSEILLE PROVENCE',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/NEUFBFMMARSEILLEPROV100x100.png'},
+ {id:'Proximus11.be',name:'Proximus11',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~cf502f96fd1d3161.png/480x480/quality/100/proximus-11.png'},
+ {id:'PublicSenat.fr',name:'Public Sénat',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/publicsenat-100x100.png'},
+ {id:'PublicSenat2424.fr',name:'Public Sénat 24\/24',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpR6zUWhGkZJgfMXt21ugKRqn72TpI5XJZiMBD5Stw-F_V7F6fcZ0EKyp0zDY&amp;s'},
+ {id:'RDI.ca',name:'RDI',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s15209_h9_ab.png'},
+ {id:'RDS.ca',name:'RDS',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s15676_h15_aa.png'},
+ {id:'RDS2.ca',name:'RDS2',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s73271_h6_aa.png'},
+ {id:'RDSInfo.ca',name:'RDS Info',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s39080_h15_ab.png'},
+ {id:'RFMTV.fr',name:'RFM TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c4e3c171a764c4e1.png/480x480/quality/100/rfm-tv.png'},
+ {id:'RMCAlerteSecours.fr',name:'RMC Alerte Secours',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCALERTESECOURSmono.png'},
+ {id:'RMCDecouverte.fr',name:'RMC Découverte',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a95c9fa646201300.png/480x480/quality/100/rmc-decouverte.png'},
+ {id:'RMCMecanic.fr',name:'RMC Mecanic',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCMECANICmono.png'},
+ {id:'RMCMystere.fr',name:'RMC Mystère',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCMYSTERESmono.png'},
+ {id:'RMCSport1.fr',name:'RMC Sport 1',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~e08d0f4124b46a3e.png/480x480/quality/100/rmc-sport-1.png'},
+ {id:'RMCSport2.fr',name:'RMC Sport 2',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~7123b0e700cbccac.png/480x480/quality/100/rmc-sport-2.png'},
+ {id:'RMCSport3.fr',name:'RMC Sport Live 3',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/RMCSPORTLIVE3100x100.png'},
+ {id:'RMCSport4.fr',name:'RMCSport4.fr'},
+ {id:'RMCSportUHD.fr',name:'RMC Sport UHD',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-2029.png'},
+ {id:'RMCTalkInfo.fr',name:'RMC Talk Info',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCTALKINFOmono.png'},
+ {id:'RMCTalkSport.fr',name:'RMC Talk Sport',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCTALKSPORTmono.png'},
+ {id:'RMCWOW.fr',name:'RMC WOW',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCWOWmono.png'},
+ {id:'RSI1.ch',name:'RSI 1',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/80452691?=.png'},
+ {id:'RSI2.ch',name:'RSI 2',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/80452698?=.png'},
+ {id:'RTC.be',name:'RTC',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhiUpxpmsSCYxyMxlhCUp4XPdQYhIRqMyq-_bAswQBN5x3uWJbjtsS6dcmdDA&amp;s'},
+ {id:'RTL9.fr',name:'RTL9',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~39e76725dfcc33a3.png/480x480/quality/100/rtl-9.png'},
+ {id:'RTLDistrict.be',name:'RTL District',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/RTL_District_Logo_2024.svg/1200px-RTL_District_Logo_2024.svg.png'},
+ {id:'RTLTVI.be',name:'RTL TVI',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~8054f5248406c04a.png/480x480/quality/100/rtl-tvi.png'},
+ {id:'RTSDeux.ch',name:'RTS Deux',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~96e7582dedb5aa8e.png/480x480/quality/100/rts-deux.png'},
+ {id:'RTSUn.ch',name:'RTS Un',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~86b9c7fb157c9a56.png/480x480/quality/100/rts-un.png'},
+ {id:'Radio1.be',name:'Radio1',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRf7E7Tz6x4vyZ0ZMUssTuQonYNg395UyNN8GVrV6zU2Ff4XDkP0pGMXQiWrA&amp;s'},
+ {id:'RegInfoF.be',name:'RegInfoF.be'},
+ {id:'Reunion1.fr',name:'Reunion 1ère',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160088/canal-ouah/CHN43FB/REUNION_1ERE_FB_myCANAL_640x480?=.png'},
+ {id:'RougeTV.ch',name:'CARAC 1 HD',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/878/canal-ouah/CHN43FB/CARAC1?=.png'},
+ {id:'SRF1.ch',name:'SRF 1',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/80452700?=.png'},
+ {id:'SRF2.ch',name:'SRF zwei',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/80452702?=.png'},
+ {id:'SRFinfo.ch',name:'SRF info',logo:'https://static.teleboy.ch/shared/stations/5/icon320_light.png?v2023_48_0'},
+ {id:'ScienceEtVieTV.fr',name:'Science et Vie TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~b6e7fa007605d89d.png/480x480/quality/100/science-vie-tv.png'},
+ {id:'Seasons.fr',name:'Seasons',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~16297b964b1804cc.png/480x480/quality/100/seasons.png'},
+ {id:'SeriesPlus.ca',name:'Series+',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s21543_h15_ab.png'},
+ {id:'SouvenirsFromEarth.fr',name:'Souvenirs From Earth',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvnOTBqGzG7wD9tD1GZgvbRa1UWRgpTwzxlswxhK5PspNVtF139wxKdGV_mpE&amp;s'},
+ {id:'SportEnFrance.fr',name:'Sport en France',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1080/canal-ouah/CHN43FB/CHN43FB_1080_20240206-ykFF?=.png'},
+ {id:'StPierreEtMiquelon1.fr',name:'St Pierre Et Miquelon 1ère',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXi7vs8TNuYmCbPMi6jy5vP0i11qA4FJwHD6Eak-PNpqBkBAQEvjmx7zWfBg&amp;s'},
+ {id:'StingrayClassica.fr',name:'StingrayClassica',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~116c4001c4dd0dd7.png/480x480/quality/100/stingray-classica.png'},
+ {id:'StingrayDjazz.fr',name:'StingrayDjazz',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~8c1d40f28aa66dfd.png/480x480/quality/100/stingray-djazz.png'},
+ {id:'StingrayFestival.fr',name:'StingrayFestival.fr'},
+ {id:'StingrayiConcerts.fr',name:'StingrayiConcerts',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~3356bba10e8643f4.png/480x480/quality/100/stingray-i-concerts.png'},
+ {id:'SundanceTV.fr',name:'Sundance TV',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRHLuhaj35IsHpTUk_xOLNlWrnauqkRg_sb1l8bpcjkpWN0NYblKkalgpyremc&amp;s'},
+ {id:'SuperEcran1.ca',name:'Super Ecran 1',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s15677_h15_ac.png'},
+ {id:'SuperEcran2.ca',name:'Super Ecran 2',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s16187_h15_ab.png'},
+ {id:'SuperEcran3.ca',name:'Super Ecran 3',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s16188_h15_ab.png'},
+ {id:'SuperEcran4.ca',name:'Super Ecran 4',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s24455_h15_ab.png'},
+ {id:'Syfy.fr',name:'Syfy',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~fdf578c5513fc680.png/480x480/quality/100/syfy.png'},
+ {id:'T18.fr',name:'T18',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~3deccc95e7e75463.png/480x480/quality/100/t18.png'},
+ {id:'TCM.fr',name:'TCM Cinéma',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1380c434ba314175.png/480x480/quality/100/tcm-cinema.png'},
+ {id:'TELEVESDRE.be',name:'TéléVESDRE',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqnda1J-_Ntq1YYm4qhlwSRvCCBzlo3kTJnj_kj5jpEJ9Ub5Yzli8E8ogD-iA&amp;s'},
+ {id:'TF1.fr',name:'TF1',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~f2b6de26acc4dc3e.png/480x480/quality/100/tf1.png'},
+ {id:'TF14k.fr',name:'TF1 4K',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Tf14k-logo.png/640px-Tf14k-logo.png'},
+ {id:'TF1SeriesFilms.fr',name:'TF1 Séries-Films',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~3104ccb3015a8669.png/480x480/quality/100/tf1-series-films.png'},
+ {id:'TF1plus1.fr',name:'TF1 + 1',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/TF1_1_color.png'},
+ {id:'TFO.ca',name:'TFO',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s10109_h15_ab.png'},
+ {id:'TIJI.fr',name:'TIJI',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~bca7f0d3d25813cd.png/480x480/quality/100/tiji.png'},
+ {id:'TL7SaintEtienne.fr',name:'TL7',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/TL7_Saint_etienne_color.png'},
+ {id:'TMC.fr',name:'TMC',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~b2c9618d914140d0.png/480x480/quality/100/tmc.png'},
+ {id:'TRACEAyiti.fr',name:'Trace Ayiti',logo:'https://freebox.cdn.scw.iliad.fr/large_trace_ayiti_94de0df748.png'},
+ {id:'TRACESportStars.fr',name:'TRACESportStars',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~d815841a915cc32f.png/480x480/quality/100/trace-sport-stars.png'},
+ {id:'TV2Com.fr',name:'TV2COM',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/100x100tv2com.png'},
+ {id:'TV5.ca',name:'TV5 Canada',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s11185_h15_aa.png'},
+ {id:'TV5Monde.fr',name:'TV5 Monde',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~0231873fab336015.png/480x480/quality/100/tv5monde.png'},
+ {id:'TV5MondeAfrique.fr',name:'TV5 Monde Afrique',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/180105/canal-ouah/CHN43FB/TV5MONDEAFRIQUE_640x480-SLr8?=.png'},
+ {id:'TV5MondeAmeriqueLatine.fr',name:'TV5MondeAmeriqueLatine.fr'},
+ {id:'TV5MondeAsie.fr',name:'TV5 Monde Asie',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIp5gn02MpoZFNnXjMbIY8RwgAw56wNab_U0Ci0T7uh0oD8kfMUkRQdo443WU&amp;s'},
+ {id:'TV5MondeEtatsUnis.fr',name:'TV5MondeEtatsUnis.fr'},
+ {id:'TV5MondeEurope.fr',name:'TV5 Monde Europe',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-232.png'},
+ {id:'TV5MondeInfo.fr',name:'TV5 Monde Info',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQblq2bYzk22pzh2Eb652NvyfwpDfXQp0k6b9YYytZSQyGbDXTSSxuHeQuNn9E&amp;s'},
+ {id:'TV5MondeMaghrebOrient.fr',name:'TV5MondeMaghrebOrient.fr'},
+ {id:'TV5MondePacifique.fr',name:'TV5 Monde Pacifique',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIp5gn02MpoZFNnXjMbIY8RwgAw56wNab_U0Ci0T7uh0oD8kfMUkRQdo443WU&amp;s'},
+ {id:'TV5Style.fr',name:'TV5 Style',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5bBhY8llmKCpPQJDCta8lgkZdSxsWvEZA3V5qqLi8H1XqH0paQ6dVLfwgSjo&amp;s'},
+ {id:'TV78.fr',name:'TV78',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/TV78100x100COULEUR.png'},
+ {id:'TV7Bordeaux.fr',name:'TV7 Bordeaux',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~4f1c8ecf76e8af37.png/480x480/quality/100/tv7-bordeaux.png'},
+ {id:'TV8MoselleEst.fr',name:'TV8 Moselle-Est',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/TV8_Moselle_Est_color.png'},
+ {id:'TVAHD.ca',name:'TVAHD',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTheHzNv660Nell2GCCOg_DejyhtlJXr_1Ax95cIxvA2CfMImnKgKvfNBekSnw&amp;s'},
+ {id:'TVASports.ca',name:'TVA Sports',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s73141_h15_ad.png'},
+ {id:'TVASports2.ca',name:'TVA Sports 2',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s90204_h15_ac.png'},
+ {id:'TVCom.be',name:'TVCom',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRU4zxIK1NutYfZMIAAEwSkbdErktYCOgtsPYu_oHfNcgIIwZwvZq_sXg-rJI&amp;s'},
+ {id:'TVLimburg.be',name:'TVLimburg',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcShL_mc70Z5I3_ZsRsySQ76cTqqQyjP0B-XtVfSefrOQf3AUZ3cG42I6psu2c0&amp;s'},
+ {id:'TVLux.be',name:'TV Lux',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQyflPglqDjGu4OQf82F_B10Lkc5Pv5LCLe8k396ojqDvrIxTVL9-ZEZkYlxA&amp;s'},
+ {id:'TVMEstParisien.fr',name:'TELE-VISION MONTREUIL',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/TELE_VISION_MONTREUIL_color.png'},
+ {id:'TVPI.fr',name:'TVPI',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~60bc9ce69aa38f02.png/480x480/quality/100/tvpi.png'},
+ {id:'TVPitchoun.fr',name:'TV Pitchoun',logo:'https://static.wikia.nocookie.net/logopedia/images/3/3c/PITCHOUN_TV_2018.png'},
+ {id:'TVRennes35Bretagne.fr',name:'TV RENNES 35',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~44a40e28fbd42184.png/480x480/quality/100/tvr-rennes-35-bretagne.png'},
+ {id:'TVSUDNimes.fr',name:'TVSUDNimes.fr'},
+ {id:'TVTours.fr',name:'TV Tours',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~069614a025efebd6.png/480x480/quality/100/tv-tours.png'},
+ {id:'TVVendee.fr',name:'TV Vendée',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/TV_Vendee_color.png'},
+ {id:'TahitiNuiTV.fr',name:'Tahiti Nui TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~4f89934309c38843.png/480x480/quality/100/tntv-france.png'},
+ {id:'TebeSud.fr',name:'TébéSud',logo:'https://upload.wikimedia.org/wikipedia/fr/2/20/T%C3%A9b%C3%A9Sud_logo_2013.png'},
+ {id:'Tebeo.fr',name:'TEBEO',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1a03f02780399e00.png/480x480/quality/100/tebeo.png'},
+ {id:'TeleBielingue.ch',name:'Télé Bielingue',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/80452689?=.png'},
+ {id:'TeleBocal.fr',name:'Télé Bocal',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/Tele_Bocal_color.png'},
+ {id:'TeleGrenobleIsere.fr',name:'Télé Grenoble',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a9c6360b76772dd2.png/480x480/quality/100/tele-grenoble-isere.png'},
+ {id:'TeleKreol.frdrom',name:'TELE KREOL',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160203/canal-ouah/CHN43FB/TELEKREOL_myCANAL_640x480?=.png'},
+ {id:'TeleLyonMetropole.fr',name:'BFM Lyon',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~cc81bc1e6fb67547.png/480x480/quality/100/bfm-lyon-metropole.png'},
+ {id:'TeleMB.be',name:'TéléMB',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQIhSfzB7N9tJ_1-uE5FwQ0h7cIMXeOZU5UPMs_ihKIfyPaQjRqA7bw69NmuiU&amp;s'},
+ {id:'TeleMag.ca',name:'TeleMag',logo:'https://cdn.tvpassport.com/image/station/640x480/v3/72595-23726.png'},
+ {id:'TelePaese.fr',name:'Télé Paese',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/Tele_Paese_color.png'},
+ {id:'TeleQuebec.ca',name:'Télé Quebec',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTitLt7vHAbol2JNPBFG7GpYcRSoTqq-2Xk4BT6pMeJ1PSHTyK8W6vpW5kRdw&amp;s'},
+ {id:'TeleSambre.be',name:'TéléSambre',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ9DzJg4y8CuWT8cLVxumr0Orv-gpJWA7-RTX5z8lkfTXT5lK1mzEEl3RABFA&amp;s'},
+ {id:'TeleTOONplus1.fr',name:'Télétoon +1',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/21523015?=.png'},
+ {id:'TeleToonPlus.fr',name:'TéléToon+',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~4812394f3595c85a.png/480x480/quality/100/teletoon.png'},
+ {id:'TelefilmsRomance2424.fr',name:'Téléfilms Romance 24/24',logo:'https://i.imgur.com/3c5IMZ5.png'},
+ {id:'Telenantes.fr',name:'Télénantes',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c13f589440531485.png/480x480/quality/100/telenantes.png'},
+ {id:'Telesud.fr',name:'Télésud',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-449.png'},
+ {id:'TeletoonCA.ca',name:'TélétoonCA',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s17564_h15_ab.png'},
+ {id:'Temoin.ca',name:'Temoin',logo:'https://cdn.tvpassport.com/image/station/640x480/v3/72006-2328C.png'},
+ {id:'Teva.fr',name:'Téva',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~4421904d874fa072.png/480x480/quality/100/teva.png'},
+ {id:'Tipikvision.be',name:'Tipikvision',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxrO1rmEw_aeT1yCzzdzwizJG-xvv0NkHUqpx6HEthJx3_iJEUS7-j71-d1w&amp;s'},
+ {id:'Tivi5.fr',name:'Tivi5',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRpcAytYRQf0WCYv17p-4MHv0YKLWK-Rmh2JFMZmqzrv_S-RjqXHy9Nnht9TQ&amp;s'},
+ {id:'Toonami.fr',name:'Warner TV Next',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1095/canal-ouah/CHN43FB/CHN43FB_1095_20240611-RIcT?=.png'},
+ {id:'TopSanteTV.fr',name:'Top Santé TV',logo:'https://freebox.cdn.scw.iliad.fr/large_top_sante_ea66c2d6c5.jpg'},
+ {id:'TouteHistoire.fr',name:"Toute l'Histoire",logo:'https://www.programme-tv.net/imgre/fit/~2~channel~37b4a846e6d5f66d.png/480x480/quality/100/toute-l-histoire.png'},
+ {id:'TraceAfrica.fr',name:'Trace Africa',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~cfa414c0987f9df9.png/480x480/quality/100/trace-africa.png'},
+ {id:'TraceCaribbean.fr',name:'TRACE CARIBBEAN',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/TRACE_CARIBBEAN_color.png'},
+ {id:'TraceGospel.fr',name:'Trace Gospel',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/Trace_Gospel_color.png'},
+ {id:'TraceLatina.fr',name:'Trace Latina',logo:'https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/784/canal-ouah/CHN43FB/TRACELATINA_myCANAL_640x480'},
+ {id:'TraceToca.fr',name:'Trace Toca',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/Trace_Toca_color.png'},
+ {id:'TraceTropical.fr',name:'Trace Tropical',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZjYaCZUHfwSB1sDQf0PzbUDiV0QuRvOe3_71eJSgUphA_fj2yGS9oeYhk1w&amp;s'},
+ {id:'TraceUrban.fr',name:'Trace Urban',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~b672a3a7ae0004dc.png/480x480/quality/100/trace-urban.png'},
+ {id:'TraceVanilla.frdrom',name:'TRACE VANILLA',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160800/canal-ouah/CHN43FB/TRACEVANILLA_myCANAL_640x480?=.png'},
+ {id:'Trek.fr',name:'TREK',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~12312ff19aafd42a.png/480x480/quality/100/trek.png'},
+ {id:'Turbo2424.fr',name:'Turbo 24/24',logo:'https://i.imgur.com/FtT302g.png'},
+ {id:'TvBreizh.fr',name:'TV Breizh',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~eda4c23255b4fed2.png/480x480/quality/100/tvbreizh.png'},
+ {id:'UnionTV.fr',name:'UNION TV',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1082/canal-ouah/CHN43FB/CHN43FB_1082_20240223-UfeX?=.png'},
+ {id:'UshuaiaTV.fr',name:'Ushuaia TV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~778073cbbd827d7a.png/480x480/quality/100/ushuaia-tv.png'},
+ {id:'VEDIA.ch',name:'VEDIA.ch'},
+ {id:'VH1.fr',name:'VH1',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQytdEW8hexcyLQuA5JkBO4_aZBs3_JPI9uK1aYWtmJuf-xA8WN9v8_VJsoTw&amp;s'},
+ {id:'VH1Classic.fr',name:'VH1 Classic',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSP_d4dzC_OxuU1tK8kVzLy8gTfuoG95QKbCTSAC2aFCPEWe2rByUXS883FBVM&amp;s'},
+ {id:'VISION.ca',name:'VISION',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0S2BefV-5_vnN4tzmvGG80Ux1-fu0xrK-V7sg2qE4tzlzQE4u3cznBCSq7TQ&amp;s'},
+ {id:'VOO.be',name:'VOO',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDtFbj8K5_Lyc8deWHYv87abeQ1LVECtLnRPKkFHDC7eCmJk6yBbUJ6G9j8kE&amp;s'},
+ {id:'VOOSport1fr.be',name:'VOO Sport1',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQeVUTkE6ZlK4yt_62EI9V06ExUMBLu58dbRg7jDGUgBOulfMMs6vsw1MWErEo&amp;s'},
+ {id:'VOOSportWorld1.be',name:'VOO Sport World 1',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~8534ffe50925cbb8.png/480x480/quality/100/voosport-world-1.png'},
+ {id:'VOOSportWorld2.be',name:'VOO Sport World 2',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~3234807dd29dcf3f.png/480x480/quality/100/voosport-world-2.png'},
+ {id:'VOOSportWorld3.be',name:'VOOSportWorld3.be'},
+ {id:'VTM.be',name:'VTM',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c279c590c7e381c4.png/480x480/quality/100/vtm.png'},
+ {id:'VTM2.be',name:'VTM2',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~32f22a87326e6887.png/480x480/quality/100/vtm2.png'},
+ {id:'VTM3.be',name:'VTM3',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~58cb299937064735.png/480x480/quality/100/vtm3.png'},
+ {id:'VTM4.be',name:'VTM4',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~cc65b4c7a1dad70e.png/480x480/quality/100/vtm4.png'},
+ {id:'VTMKids.be',name:'VTMKids',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTy6FQDAFPUNQW_9MqIanhnCNh1a2VWcLT2GlOv7iXOKZ2bWXLjciOWccuqwQ&amp;s'},
+ {id:'VarAzur.fr',name:'BFM TOULON VAR',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/NEUFBFMTOULONVAR100x100.png'},
+ {id:'ViaGrandParis.fr',name:'Le Figaro TV',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1102/canal-ouah/CHN43FB/CHN43FB_1102_20241115-fDKx?=.png'},
+ {id:'Vier.be',name:'Vier',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~9dd9f700e9e26fd0.png/480x480/quality/100/vier.png'},
+ {id:'VosgesTV.fr',name:'Vosges tv',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~cd72a83bfe5b6ae7.png/480x480/quality/100/vosges-television.png'},
+ {id:'W9.fr',name:'W9',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~15acfc705e2d4dd8.png/480x480/quality/100/w9.png'},
+ {id:'WallisEtFutuna1.fr',name:'Wallis Et Futuna 1ère',logo:'https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/170089/canal-ouah/CHN43FB/_thumb_526569?=.png'},
+ {id:'WarnerTV.fr',name:'WarnerTV',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6d75450123e766d6.png/480x480/quality/100/warner-tv.png'},
+ {id:'Weo.fr',name:'Wéo TV, La voix du nord',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/WEOLAVDN100x100.png'},
+ {id:'WeoPicardie.fr',name:'Wéo Picardie',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/WeoPicardie100x100.png'},
+ {id:'XXL.fr',name:'XXL',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~48adbfdc75caea15.png/480x480/quality/100/xxl.png'},
+ {id:'ZTele.ca',name:'Z Tele',logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqrMRPUQoPrqsV9CqtS9kX7lN7aRxh7cLmlD9KwU4kOBeBiKoHGj3yz1YeHA&amp;s'},
+ {id:'Zeste.ca',name:'Zeste',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s67174_h15_ac.png'},
+ {id:'ZoneInterdite2424.fr',name:'Zone Interdite 24/24',logo:'https://i.imgur.com/Tga6YU3.png'},
+ {id:'ZoukTV.fr',name:'ZOUK TV',logo:'https://static-cdn.tv.sfr.net/data/logos/tv_services/ZOUK_TV_color.png'},
+ {id:'beINSPORTS1.fr',name:'beIN SPORTS 1',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~8884f09c3361af44.png/480x480/quality/100/bein-sports-1.png'},
+ {id:'beINSPORTS2.fr',name:'beIN SPORTS 2',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~2fa633f39d6c3033.png/480x480/quality/100/bein-sports-2.png'},
+ {id:'beINSPORTS3.fr',name:'beIN SPORTS 3',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~d5aee128665b32a9.png/480x480/quality/100/bein-sports-3.png'},
+ {id:'beINSPORTSMAX10.fr',name:'beIN SPORTS MAX 10',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~57cc7cfcf4f15450.png/480x480/quality/100/bein-sports-max-10.png'},
+ {id:'beINSPORTSMAX4.fr',name:'beIN SPORTS MAX 4',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~f477968320ad7f2d.png/480x480/quality/100/bein-sports-max-4.png'},
+ {id:'beINSPORTSMAX5.fr',name:'beIN SPORTS MAX 5',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~c4ea43a2003fd8f8.png/480x480/quality/100/bein-sports-max-5.png'},
+ {id:'beINSPORTSMAX6.fr',name:'beIN SPORTS MAX 6',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~1c56a2b0848f53c9.png/480x480/quality/100/bein-sports-max-6.png'},
+ {id:'beINSPORTSMAX7.fr',name:'beIN SPORTS MAX 7',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~3f6b355dbbc53d15.png/480x480/quality/100/bein-sports-max-7.png'},
+ {id:'beINSPORTSMAX8.fr',name:'beIN SPORTS MAX 8',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~d158ab4de3140d50.png/480x480/quality/100/bein-sports-max-8.png'},
+ {id:'beINSPORTSMAX9.fr',name:'beIN SPORTS MAX 9',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~3149edbf3b3b1738.png/480x480/quality/100/bein-sports-max-9.png'},
+ {id:'een.be',name:'een',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~6fa90bb314bd9910.png/480x480/quality/100/een.png'},
+ {id:'prise2.ca',name:'prise2',logo:'https://cdn.tvpassport.com/image/station/640x480/v2/s49692_h15_ab.png'},
+ {id:'serieclub.fr',name:'SERIE CLUB',logo:'https://www.programme-tv.net/imgre/fit/~2~channel~a341f0fb3b68e0be.png/480x480/quality/100/serieclub.png'},
+ {id:'viaATV.fr',name:'viaATV',logo:'https://focus.telerama.fr/500x500/0000/00/01/clear-295.png'},
+ {id:'viaMaTele.fr',name:'Vià MATÉLÉ',logo:'https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/viamatele100x100couleur.png'},
+];
+const CH_COLORS=['#E63946','#2196F3','#4CAF50','#FF9800','#9C27B0','#00BCD4','#FF5722','#607D8B','#795548','#009688'];
+let _colorIdx=0;
+function nextColor(){return CH_COLORS[_colorIdx++%CH_COLORS.length];}
+
+function searchChannels(q){
+  const el=document.getElementById('ch-search-results');
+  if(!q||q.length<2){el.innerHTML='';return;}
+  const qn=q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const results=XMLTV_CATALOG.filter(c=>{
+    const n=c.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const i=c.id.toLowerCase();
+    return n.includes(qn)||i.includes(qn);
+  }).slice(0,10);
+  if(!results.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px">Aucune chaîne trouvée</div>';return;}
+  el.innerHTML=results.map(c=>{
+    const already=CATALOG.find(x=>x.xmltvfrId===c.id||x.id==='cx_'+c.id.replace(/[^a-zA-Z0-9]/g,'_').toLowerCase());
+    return'<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--border);cursor:pointer" onclick="addChannelById(\''+c.id+'\',\''+esc(c.name)+'\')">'+
+      '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">'+esc(c.name)+'</div><div style="font-size:10px;color:var(--text3)">'+c.id+'</div></div>'+
+      (already?'<span style="font-size:11px;color:var(--live)">✓ Ajoutée</span>':'<span style="font-size:20px;color:var(--accent)">＋</span>')+
+    '</div>';
+  }).join('');
+}
+
+function addChannelById(xmlid, name){
+  const id='cx_'+xmlid.replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+  if(CATALOG.find(c=>c.id===id)){alert('"'+name+'" est déjà dans la liste.');return;}
+  const color=nextColor();
+  const abbr=name.replace(/[^A-Z0-9]/gi,'').substring(0,4).toUpperCase()||'CH';
+  const catalogEntry=XMLTV_CATALOG.find(c=>c.id===xmlid);
+  const logoUrl=(catalogEntry&&catalogEntry.logo)||REMOTE_LOGOS[id]||'';
+  const ch={id,name,cc:'FR',color,abbr,_custom:true,xmltvfrId:xmlid,logoUrl};
+  CATALOG.push(ch);ST.channels.push(ch);
+  saveCustomChannels();saveChs();
+  document.getElementById('add-search').value='';
+  document.getElementById('ch-search-results').innerHTML='';
+  renderToggles();renderCustomList();renderGrid();
+  alert('✅ "'+name+'" ajoutée !\n\nPour les vraies données, lancez le scraper ce soir ou demain matin il se lancera automatiquement à 6h.');
+}
+
+function addCustomChannel(){
+  const name=document.getElementById('add-name')?.value?.trim();
+  const xmlid=document.getElementById('add-xmlid')?.value?.trim();
+  if(!name||!xmlid){return;}
+  addChannelById(xmlid,name);
+}
+function removeCustomChannel(id){
+  if(!confirm('Supprimer cette chaîne ?'))return;
+  const idx=CATALOG.findIndex(c=>c.id===id);if(idx>=0)CATALOG.splice(idx,1);
+  ST.channels=ST.channels.filter(c=>c.id!==id);
+  saveCustomChannels();saveChs();renderToggles();renderCustomList();renderGrid();
+}
+function renderCustomList(){
+  const el=document.getElementById('custom-ch-list');if(!el)return;
+  const customs=CATALOG.filter(c=>c._custom);
+  if(!customs.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="font-size:10px;color:var(--text3);margin-bottom:6px">Chaînes personnalisées :</div>'+
+    customs.map(ch=>{
+      const on=ST.channels.some(c=>c.id===ch.id);
+      return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
+        '<div style="width:28px;height:28px;border-radius:5px;background:'+ch.color+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:#fff;flex-shrink:0">'+esc(ch.abbr)+'</div>'+
+        '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">'+esc(ch.name)+'</div><div style="font-size:10px;color:var(--text3)">'+esc(ch.xmltvfrId||'')+'</div></div>'+
+        '<button class="tgl'+(on?' on':'')+'" onclick="toggleCustomCh(\''+ch.id+'\',this)"></button>'+
+        '<button onclick="removeCustomChannel(\''+ch.id+'\')" style="color:#ff5566;font-size:16px;padding:4px 6px;background:none;border:none;cursor:pointer">✕</button>'+
+      '</div>';
+    }).join('');
+}
+
+// Rendering
+function renderSBBadge(){const el=document.getElementById('sb-badge-wrap');if(!el)return;el.innerHTML=ST.sbUrl&&ST.sbKey?'<span class="sb-badge ok">✓ Supabase configuré</span>':'<span class="sb-badge nok">⚠ Non configuré</span>';}
+function renderStrip(){const t=todayStr(),el=document.getElementById('datestrip');el.innerHTML=dateRange().map(d=>{const past=d<t,isT=d===t,sel=d===ST.date;return'<div class="dp'+(past?' past':'')+(isT?' today':'')+(sel?' sel':'')+'" onclick="selDate(\''+d+'\')">'+fmtStrip(d)+'</div>';}).join('');setTimeout(()=>{const a=el.querySelector('.sel');if(a)a.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});},100);}
+function selDate(d){ST.date=d;renderStrip();if(ST.mode==='grid')renderGrid();else if(ST.mode==='sched')renderSched(ST.chId);}
+function renderGrid(){const pane=document.getElementById('pane');if(!ST.channels.length){pane.innerHTML='<div class="empty">📺<br>Aucune chaîne active</div>';return;}pane.innerHTML='<div class="ch-grid">'+ST.channels.map((ch,i)=>{const ns=nowShows(ch.id,ST.date),cur=ns.cur,nxt=ns.nxt,live=cur&&isLive(cur,ST.date),pct=live?progress(cur).toFixed(1):0,real=isReal(ch.id,ST.date);return'<div class="ch-card fu" style="animation-delay:'+i*.025+'s" onclick="openSched(\''+ch.id+'\')"><div class="ch-stripe" style="background:'+ch.color+'"></div>'+mkLogo(ch.id,ch,48)+'<div class="ch-body"><div class="ch-name">'+esc(ch.name)+(real?'<span class="real-dot">●</span>':'')+'</div><div class="ch-show">'+(cur?esc(cur.name):'<span style="color:var(--text3);font-style:italic">Non disponible</span>')+'</div>'+(cur?'<div class="ch-row2">'+(live?'<span class="live-pill">EN DIRECT</span>':'')+'<span>'+cur.time+(cur.endTime?' – '+cur.endTime:'')+'</span></div>':'')+(live?'<div class="ch-prog"><div class="ch-prog-bar" style="width:'+pct+'%;background:'+ch.color+'"></div></div>':'<div style="height:5px"></div>')+(nxt?'<div class="ch-nxt">→ '+nxt.time+' <b>'+esc(nxt.name)+'</b></div>':'<div style="height:2px"></div>')+'</div></div>';}).join('')+'</div>';}
+function openSched(chId){ST.mode='sched';ST.chId=chId;const ch=CATALOG.find(c=>c.id===chId)||{};document.getElementById('logo').style.display='none';const ct=document.getElementById('ch-title');ct.textContent=ch.name||chId;ct.classList.add('on');document.getElementById('btn-back').classList.add('on');renderSched(chId);}
+function renderSched(chId){const pane=document.getElementById('pane'),ch=CATALOG.find(c=>c.id===chId)||{};const shows=getShows(chId,ST.date),real=isReal(chId,ST.date);const src=getLogo(chId);const hLogo=src?'<div class="sch-hlogo"><img src="'+src+'" width="48" height="48"></div>':'<div class="sch-hlogo" style="background:'+(ch.color||'#555')+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff">'+esc(ch.abbr||'?')+'</div>';let html='<div class="sch-hdr fu">'+hLogo+'<div><div class="sch-hname">'+esc(ch.name||chId)+'</div><div class="sch-hdate">'+fmtDate(ST.date)+'</div><div class="sch-src '+(real?'real':'local')+'">'+(real?'● Données réelles (xmltvfr.fr + Supabase)':'○ Programme indicatif')+'</div></div></div>';if(!shows.length){pane.innerHTML=html+'<div class="empty">😕<br>Aucune émission</div>';return;}html+='<div class="sch-list fu">';shows.forEach((s,i)=>{const live=isLive(s,ST.date),past=!live&&isPast(s,ST.date);const sid=stash(Object.assign({},s,{channelId:chId,chObj:ch}));html+='<div class="sch-row'+(past?' past':'')+(live?' live-row':'')+'" onclick="openModal(\''+sid+'\')"><div class="sch-tcol"><div class="sch-time">'+s.time+'</div>'+(s.endTime?'<div class="sch-tend">'+s.endTime+'</div>':'')+'</div><div class="sch-tl"><div class="sch-dot'+(live?' live':'')+'"></div>'+(i<shows.length-1?'<div class="sch-line"></div>':'')+'</div><div class="sch-body"><div class="sch-name">'+esc(s.name)+'</div><div class="sch-tags">'+(live?'<span class="tag tag-live">EN DIRECT</span>':'')+(s.genres||[]).map(g=>'<span class="tag tag-g">'+esc(g)+'</span>').join('')+(s.runtime?'<span class="tag tag-d">'+s.runtime+' min</span>':'')+'</div></div></div>';});html+='</div>';pane.innerHTML=html;if(ST.date===todayStr())setTimeout(()=>{const lv=pane.querySelector('.live-row');if(lv)lv.scrollIntoView({block:'center',behavior:'smooth'});},200);}
+function goBack(){ST.mode='grid';ST.chId=null;document.getElementById('logo').style.display='';document.getElementById('ch-title').classList.remove('on');document.getElementById('btn-back').classList.remove('on');renderGrid();}
+function toggleSearch(){const open=document.getElementById('srch-wrap').classList.contains('open');if(!open){document.getElementById('srch-wrap').classList.add('open');document.getElementById('btn-srch').classList.add('on');ST.mode='search';renderSearchEmpty();setTimeout(()=>document.getElementById('srch-in').focus(),300);}else{document.getElementById('srch-wrap').classList.remove('open');document.getElementById('btn-srch').classList.remove('on');document.getElementById('srch-in').value='';ST.mode=ST.chId?'sched':'grid';if(ST.chId)renderSched(ST.chId);else renderGrid();}}
+function clearSearch(){document.getElementById('srch-in').value='';renderSearchEmpty();}
+function onSearch(q){if(!q){renderSearchEmpty();return;}renderSearchResults(searchAll(q),q);}
+function renderSearchEmpty(){document.getElementById('pane').innerHTML='<div class="s-empty"><div style="font-size:44px">🔍</div><div>Recherchez une émission sur 8 jours.</div></div>';}
+function renderSearchResults(res,q){const pane=document.getElementById('pane');if(!res.length){pane.innerHTML='<div class="s-empty"><div style="font-size:44px">😕</div><div>Aucun résultat pour «\u00a0'+esc(q)+'\u00a0»</div></div>';return;}const by={};res.forEach(r=>{if(!by[r.date])by[r.date]=[];by[r.date].push(r);});let html='<div class="fu">';for(const[d,items]of Object.entries(by)){html+='<div class="s-day">'+fmtDate(d)+'</div>';items.forEach(item=>{const ch=item.chObj||CATALOG.find(c=>c.id===item.channelId)||{};const sid=stash(Object.assign({},item,{chObj:ch}));html+='<div class="s-row" onclick="openModal(\''+sid+'\')"><div class="s-name">'+hl(item.name,q)+'</div><div class="s-meta"><span class="s-dot" style="background:'+(ch.color||'#888')+'"></span><span>'+esc(ch.name||item.channelId)+'</span><span>'+item.time+(item.endTime?' – '+item.endTime:'')+'</span>'+(item._real?'<span style="color:var(--live);font-size:10px">● réel</span>':'')+'</div></div>';});}pane.innerHTML=html+'</div>';}
+function openModal(sid){const s=pop(sid);if(!s)return;ST.modal=s;const ch=s.chObj||CATALOG.find(c=>c.id===s.channelId)||{};const src=getLogo(s.channelId||ch.id);document.getElementById('m-logo').innerHTML=src?'<img src="'+src+'" width="36" height="36">':`<div style="width:36px;height:36px;background:${ch.color||'#555'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff;border-radius:8px">${esc(ch.abbr||'?')}</div>`;document.getElementById('m-dt').textContent=(ch.name||'')+' · '+fmtDate(s.date,true)+' · '+s.time+(s.endTime?' – '+s.endTime:'')+(s.runtime?' ('+s.runtime+' min)':'');document.getElementById('m-title').textContent=s.name||'';document.getElementById('m-tags').innerHTML=(s.genres||[]).map(g=>'<span class="m-tag">'+esc(g)+'</span>').join('')+(s._real?'<span class="m-tag" style="color:var(--live)">● xmltvfr.fr</span>':'<span class="m-tag" style="color:var(--text3)">○ Indicatif</span>');document.getElementById('m-sum').textContent=s.summary||'Aucune description disponible.';const reruns=findReruns(s),rc=document.getElementById('m-reruns');if(reruns.length){rc.innerHTML=reruns.map(r=>{const rc2=r.chObj||CATALOG.find(c=>c.id===r.channelId)||{};const s2=getLogo(r.channelId||rc2.id);return'<div class="rerun" onclick="closeModal();selDate(\''+r.date+'\');openSched(\''+(r.channelId||rc2.id)+'\')"><div class="rr-d">'+fmtDate(r.date,true)+'</div><div class="rr-t">'+r.time+'</div><div class="rr-b">'+(s2?'<img src="'+s2+'" width="28" height="28">':`<div style="width:28px;height:28px;background:${rc2.color||'#555'};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:#fff;border-radius:6px">${esc(rc2.abbr||'?')}</div>`)+'</div></div>';}).join('');}else{rc.innerHTML='<div class="rr-none">Aucune rediffusion trouvée.</div>';}document.getElementById('modal-bg').classList.add('open');document.getElementById('modal-sheet').classList.add('open');}
+function closeModal(){document.getElementById('modal-bg').classList.remove('open');document.getElementById('modal-sheet').classList.remove('open');ST.modal=null;}
+function addToCalendar(){
+  const s=ST.modal;if(!s)return;
+  const ch=s.chObj||CATALOG.find(c=>c.id===s.channelId)||{};
+  // Construire datetime ICS (format: YYYYMMDDTHHmmss)
+  function toICS(dateStr,timeStr){
+    if(!dateStr||!timeStr)return null;
+    return dateStr.replace(/-/g,'')+'T'+timeStr.replace(':','')+'00';
+  }
+  const dtStart=toICS(s.date,s.time);
+  const dtEnd=s.endTime?toICS(s.date,s.endTime):null;
+  if(!dtStart)return;
+  const uid=Math.random().toString(36).substr(2,9)+'@guidetv.ch';
+  const now=new Date().toISOString().replace(/[-:.]/g,'').slice(0,15);
+  const desc=(s.summary||'').replace(/\n/g,'\\n').replace(/,/g,'\\,');
+  const title=esc(s.name||'').replace(/,/g,'\\,');
+  const location=esc(ch.name||'');
+  let ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Guide TV Suisse//FR\r\nCALSCALE:GREGORIAN\r\n';
+  ics+='BEGIN:VEVENT\r\n';
+  ics+='UID:'+uid+'\r\n';
+  ics+='DTSTAMP:'+now+'Z\r\n';
+  ics+='DTSTART:'+dtStart+'\r\n';
+  if(dtEnd)ics+='DTEND:'+dtEnd+'\r\n';
+  ics+='SUMMARY:'+title+(location?' — '+location:'')+'\r\n';
+  if(desc)ics+='DESCRIPTION:'+desc+'\r\n';
+  if(location)ics+='LOCATION:'+location+'\r\n';
+  ics+='END:VEVENT\r\nEND:VCALENDAR';
+  // Télécharger le fichier ICS
+  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=(s.name||'emission').replace(/[^a-z0-9]/gi,'_')+'.ics';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+}
+function sendMail(){const s=ST.modal;if(!s)return;const ch=s.chObj||CATALOG.find(c=>c.id===s.channelId)||{};const sub=encodeURIComponent('[Guide TV] '+s.name+' – '+fmtDate(s.date));const body=encodeURIComponent('📺 '+(ch.name||s.channelId)+'\n🎬 '+s.name+'\n📅 '+fmtDate(s.date)+' · '+s.time+(s.endTime?' – '+s.endTime:'')+(s.runtime?' ('+s.runtime+' min)':'')+'\n🎭 '+(s.genres||[]).join(', ')+'\n\n'+(s.summary?'📝 '+s.summary+'\n\n':'')+'──\nGuide TV Suisse');window.location.href='mailto:'+encodeURIComponent(ST.email||'')+'?subject='+sub+'&body='+body;}
+function openSettings(){document.getElementById('sp-sb-url').value=ST.sbUrl||'';document.getElementById('sp-sb-key').value=ST.sbKey||'';document.getElementById('sp-email').value=ST.email||'';renderSBBadge();renderToggles();renderCustomList();document.getElementById('sp-bg').classList.add('open');document.getElementById('sp-panel').classList.add('open');}
+function closeSettings(){document.getElementById('sp-bg').classList.remove('open');document.getElementById('sp-panel').classList.remove('open');}
+function renderToggles(){
+  const fl={CH:'🇨🇭',FR:'🇫🇷',CA:'🍁'};
+  const list=CATALOG.filter(c=>!c._custom);
+  document.getElementById('ch-toggles').innerHTML=list.map((ch,i)=>{
+    const on=ST.channels.some(c=>c.id===ch.id),src=getLogo(ch.id);
+    const logo=src?'<div class="ct-logo"><img src="'+src+'" width="32" height="32"></div>':'<div class="ct-logo" style="background:'+ch.color+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:#fff">'+esc(ch.abbr)+'</div>';
+    return'<div class="ct-row" data-id="'+ch.id+'">'+
+      '<div class="ct-arrows">'+
+        '<button class="ct-arrow" onclick="moveCh(\''+ch.id+'\',-1)" '+(i===0?'style="opacity:.3;pointer-events:none"':'')+'>▲</button>'+
+        '<button class="ct-arrow" onclick="moveCh(\''+ch.id+'\',1)" '+(i===list.length-1?'style="opacity:.3;pointer-events:none"':'')+'>▼</button>'+
+      '</div>'+
+      logo+
+      '<div style="flex:1;min-width:0"><div class="ct-name">'+esc(ch.name)+'</div><div class="ct-cc">'+(fl[ch.cc]||'🌐')+' '+ch.cc+'</div></div>'+
+      '<button class="tgl'+(on?' on':'')+'" onclick="toggleCh(\''+ch.id+'\',this)"></button>'+
+      '<button onclick="deleteCh(\''+ch.id+'\')" style="color:#ff5566;font-size:16px;padding:4px 6px;background:none;border:none;cursor:pointer;flex-shrink:0" title="Supprimer">🗑</button>'+
+    '</div>';
+  }).join('');
+}
+function deleteCh(id){
+  const ch=CATALOG.find(c=>c.id===id);
+  if(!confirm('Supprimer "'+((ch&&ch.name)||id)+'" ?'))return;
+  const idx=CATALOG.findIndex(c=>c.id===id);
+  if(idx>=0)CATALOG.splice(idx,1);
+  ST.channels=ST.channels.filter(c=>c.id!==id);
+  // Sauvegarder les chaînes supprimées du catalogue fixe
+  const deleted=lsGet('deleted_chs',[]);
+  if(!deleted.includes(id))deleted.push(id);
+  lsSet('deleted_chs',deleted);
+  saveCustomChannels();saveChs();renderToggles();renderGrid();
+}
+function moveCh(id,dir){
+  const list=CATALOG.filter(c=>!c._custom);
+  const idx=list.findIndex(c=>c.id===id);
+  const newIdx=idx+dir;
+  if(newIdx<0||newIdx>=list.length)return;
+  // Trouver positions dans CATALOG complet
+  const ci=CATALOG.findIndex(c=>c.id===id);
+  const ni=CATALOG.findIndex(c=>c.id===list[newIdx].id);
+  const tmp=CATALOG[ci];CATALOG[ci]=CATALOG[ni];CATALOG[ni]=tmp;
+  // Réordonner ST.channels
+  const order=CATALOG.filter(c=>!c._custom).map(c=>c.id);
+  ST.channels.sort((a,b)=>{const ai=order.indexOf(a.id),bi=order.indexOf(b.id);return(ai===-1?999:ai)-(bi===-1?999:bi);});
+  lsSet('catalog_order',order);
+  saveChs();renderToggles();renderGrid();
+}
+function loadCatalogOrder(){
+  const order=lsGet('catalog_order',null);if(!Array.isArray(order))return;
+  const reordered=order.map(id=>CATALOG.find(c=>c.id===id)).filter(Boolean);
+  const rest=CATALOG.filter(c=>!order.includes(c.id));
+  CATALOG.length=0;reordered.forEach(c=>CATALOG.push(c));rest.forEach(c=>CATALOG.push(c));
+}
+function toggleCustomCh(id,btn){const on=ST.channels.some(c=>c.id===id);if(on){ST.channels=ST.channels.filter(c=>c.id!==id);btn.classList.remove('on');}else{const ch=CATALOG.find(c=>c.id===id);if(ch){ST.channels.push(ch);btn.classList.add('on');}}saveChs();renderGrid();}
+function toggleCh(id,btn){const on=ST.channels.some(c=>c.id===id);if(on){ST.channels=ST.channels.filter(c=>c.id!==id);btn.classList.remove('on');}else{const ch=CATALOG.find(c=>c.id===id);if(ch){ST.channels.push(ch);btn.classList.add('on');}}saveChs();renderGrid();}
+function forceRefresh(){ST.data={};closeSettings();document.getElementById('upd').classList.remove('gone');document.getElementById('upd-fill').style.width='0';document.getElementById('upd-ok').classList.remove('show');init();}
+function clearCache(){ST.data={};alert('Cache vidé.');}
+function resetAll(){if(!confirm('Réinitialiser tout ?'))return;localStorage.clear();location.reload();}
+function updateStatus(){const dot=document.getElementById('st-dot'),txt=document.getElementById('st-txt');if(!ST.sbUrl||!ST.sbKey){dot.className='st-dot warn';txt.textContent='Supabase non configuré — ouvrez Réglages ⚙️';return;}let real=0,total=0;for(const ch of ST.channels)for(const d of dateRange()){total++;if(isReal(ch.id,d))real++;}if(real===0){dot.className='st-dot';txt.textContent='Connecté — aucune donnée (lancez le scraper)';}else{const pct=Math.round(real/total*100);dot.className='st-dot live';txt.textContent=pct+'% données réelles · '+real+'/'+total+' créneaux';}}
+
+async function init(){
+  loadCustomChannels();loadCatalogOrder();
+  await loadCustomChannelsFromSupabase();
+  // Retirer les chaînes supprimées du catalogue fixe
+  const deleted=lsGet('deleted_chs',[]);
+  deleted.forEach(id=>{const i=CATALOG.findIndex(c=>c.id===id);if(i>=0)CATALOG.splice(i,1);});
+  loadCfg();renderStrip();renderGrid();
+  if(!ST.sbUrl||!ST.sbKey){
+    document.getElementById('upd-msg').textContent='Supabase non configuré';
+    document.getElementById('upd-fill').style.width='100%';
+    const ok=document.getElementById('upd-ok');ok.style.color='var(--accent)';ok.textContent='⚙️ Ouvrez Réglages pour configurer Supabase';ok.classList.add('show');
+    await new Promise(r=>setTimeout(r,800));document.getElementById('upd').classList.add('gone');updateStatus();return;
+  }
+  // Timeout securite - ouverture forcee apres 5s
+  const forceOpen=setTimeout(()=>{document.getElementById('upd').classList.add('gone');updateStatus();renderGrid();},5000);
+  try{
+    await loadAllData();
+    const real=ST.channels.reduce((a,ch)=>a+dateRange().filter(d=>isReal(ch.id,d)).length,0);
+    const ok=document.getElementById('upd-ok');
+    if(real>0){ok.style.color='var(--live)';ok.textContent='✓ '+real+' créneaux chargés depuis Supabase';}
+    else{ok.style.color='var(--accent)';ok.textContent='⚠ Aucune donnée — lancez le scraper';}
+    ok.classList.add('show');
+  }catch{const ok=document.getElementById('upd-ok');ok.style.color='var(--text3)';ok.textContent='Erreur connexion — données indicatives';ok.classList.add('show');}
+  clearTimeout(forceOpen);
+  await new Promise(r=>setTimeout(r,1000));
+  document.getElementById('upd').classList.add('gone');updateStatus();renderGrid();
+  setInterval(()=>{if(ST.mode==='grid'&&ST.date===todayStr())renderGrid();},60000);
+  document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(document.getElementById('sp-panel').classList.contains('open'))closeSettings();else if(document.getElementById('modal-sheet').classList.contains('open'))closeModal();else if(document.getElementById('srch-wrap').classList.contains('open'))toggleSearch();else if(ST.mode==='sched')goBack();});
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
