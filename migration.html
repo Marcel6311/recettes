@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migration Recettes</title>
+<style>
+body { font-family: sans-serif; background: #FAF6EF; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; text-align: center; }
+h1 { color: #3E2010; font-size: 22px; margin-bottom: 10px; }
+p { color: #9A8C7A; font-size: 15px; margin-bottom: 30px; }
+button { background: #C49A3C; color: #fff; border: none; border-radius: 12px; padding: 16px 32px; font-size: 17px; font-weight: 700; cursor: pointer; width: 100%; max-width: 320px; }
+#status { margin-top: 24px; font-size: 15px; color: #3E2010; font-weight: 600; line-height: 1.8; }
+.ok { color: #3A7A2A; font-size: 40px; }
+.err { color: #A03020; }
+</style>
+</head>
+<body>
+<h1>🥐 Migration des recettes</h1>
+<p>Appuie sur le bouton pour transférer toutes tes recettes de Supabase vers ton iPhone.</p>
+<button onclick="migrate()">Transférer mes recettes</button>
+<div id="status"></div>
+<script>
+const SUPA_URL='https://bcekjclnhehvzarvybxd.supabase.co';
+const SUPA_KEY='sb_publishable_VJCEE2irWvslY2nXX4jTqQ_WZ_Cbq63';
+const STORAGE_KEY='recettes_v1';
+
+async function migrate(){
+  const btn=document.querySelector('button');
+  const status=document.getElementById('status');
+  btn.disabled=true;
+  btn.textContent='Connexion à Supabase…';
+  status.innerHTML='';
+  try {
+    const res=await fetch(SUPA_URL+'/rest/v1/recettes?select=*&order=updated_at.desc',{
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+    });
+    if(!res.ok) throw new Error('Erreur Supabase : '+res.status);
+    const data=await res.json();
+    if(!data.length){
+      status.innerHTML='<span class="err">Aucune recette trouvée sur Supabase.<br>Le projet est peut-être en pause.</span>';
+      btn.disabled=false;btn.textContent='Réessayer';
+      return;
+    }
+    // Convertir format Supabase → format local
+    const local=data.map(r=>({
+      id: r.id,
+      name: r.nom,
+      cat: r.categorie||'',
+      notes: r.notes||'',
+      ings: r.ingredients||[]
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
+    status.innerHTML='<div class="ok">✓</div><br>'+local.length+' recette'+(local.length>1?'s':'')+' transférée'+(local.length>1?'s':'')+' avec succès !<br><br>Tu peux maintenant fermer cette page et ouvrir ton app recettes normalement.';
+    btn.textContent='✓ Migration terminée';
+  } catch(e) {
+    status.innerHTML='<span class="err">Erreur : '+e.message+'<br>Vérifie ta connexion internet et réessaie.</span>';
+    btn.disabled=false;
+    btn.textContent='Réessayer';
+  }
+}
+</script>
+</body>
+</html>
