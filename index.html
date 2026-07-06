@@ -188,12 +188,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   <div class="stats" id="home-stats"></div>
   <div id="home-cats-wrap"></div>
   <div id="home-recent-wrap"></div>
-  <div id="home-empty" class="empty" style="display:none">Aucune recette.<br><br><button class="tb-btn accent" onclick="newRecipe()" style="font-size:15px;padding:10px 20px;">＋ Créer ma première recette</button><br><br><button class="tb-btn" onclick="migrateFromSupabase()" style="font-size:13px;padding:8px 16px;margin-top:6px">📥 Importer depuis Supabase</button></div>
-  <div id="migrate-banner" style="display:none;background:var(--parchment);border:1.5px solid var(--caramel);border-radius:12px;padding:14px 16px;margin-top:16px;text-align:center">
-    <div style="font-weight:700;color:var(--brown);margin-bottom:8px">📥 Importer tes recettes existantes</div>
-    <div style="font-size:13px;color:var(--gray);margin-bottom:12px">Copie tes recettes depuis Supabase vers ton iPhone en un clic.</div>
-    <button class="tb-btn accent" onclick="migrateFromSupabase()" style="width:100%;padding:12px">Importer maintenant</button>
-  </div>
+  <div id="home-empty" class="empty" style="display:none">Aucune recette.<br><br><button class="tb-btn accent" onclick="newRecipe()" style="font-size:15px;padding:10px 20px;">＋ Créer ma première recette</button></div>
 </div>
 <div class="page" id="page-list">
   <div class="search-wrap"><span class="search-icon">🔍</span><input type="search" id="search-input" placeholder="Rechercher une recette…" oninput="onSearch()" autocomplete="off"></div>
@@ -306,31 +301,6 @@ async function init(){
   recipes=loadFromStorage();
   attachDropdown(document.getElementById('edit-cat'),document.getElementById('cat-dropdown'),getCats,v=>{document.getElementById('edit-cat').value=v;});
   renderHome();renderList();goTo('home');
-  // Montrer le bandeau de migration si aucune recette locale
-  if(recipes.length===0){
-    document.getElementById('migrate-banner').style.display='block';
-  }
-}
-
-async function migrateFromSupabase(){
-  const SUPA_URL='https://bcekjclnhehvzarvybxd.supabase.co';
-  const SUPA_KEY='sb_publishable_VJCEE2irWvslY2nXX4jTqQ_WZ_Cbq63';
-  notify('Connexion à Supabase…');
-  try{
-    const res=await fetch(SUPA_URL+'/rest/v1/recettes?select=*&order=updated_at.desc',{
-      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
-    });
-    if(!res.ok)throw new Error('Erreur '+res.status);
-    const data=await res.json();
-    if(!data.length){notify('Aucune recette trouvée sur Supabase.',true);return;}
-    recipes=data.map(r=>({id:r.id,name:r.nom,cat:r.categorie||'',notes:r.notes||'',ings:r.ingredients||[]}));
-    saveToStorage(recipes);
-    document.getElementById('migrate-banner').style.display='none';
-    renderHome();renderList();
-    notify('✓ '+recipes.length+' recette'+(recipes.length>1?'s':'')+' importée'+(recipes.length>1?'s':'')+' !');
-  }catch(e){
-    notify('Erreur : '+e.message,true);
-  }
 }
 
 const PAGES=['home','list','view','edit','calc'];
