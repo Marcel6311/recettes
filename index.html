@@ -434,8 +434,19 @@ function setTarget(v){document.getElementById('calc-target').value=v;updateCalc(
 function updateCalc(){const r=recipes.find(x=>x.id===calcId);if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),valid=cible>0&&tot>0,factor=valid?cible/tot:null,pill=document.getElementById('factor-pill');pill.style.display=valid?'':'none';if(valid)pill.textContent='× '+factor.toFixed(4);document.getElementById('result-table').style.display='';document.getElementById('result-head-3').textContent=valid?'Pour '+cible.toFixed(0)+' g':'Calculé';document.getElementById('tot-result').textContent=valid?cible.toFixed(1)+' g':'—';document.getElementById('tot-result').className=valid?'c3 hi':'c3';document.querySelectorAll('.qbtn').forEach(b=>b.classList.toggle('on',valid&&Math.abs(parseFloat(b.textContent)-cible)<0.5));renderResultRows(r,factor);}
 function renderResultRows(r,factor){document.getElementById('result-rows').innerHTML=r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor!==null?base*factor:null;return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="c2">'+base.toFixed(1)+'</span><span class="'+(calc!==null?'c3 hi':'c3')+'">'+(calc!==null?calc.toFixed(1)+' g':'—')+'</span></div>';}).join('');}
 function exportPDF(){const r=recipes.find(x=>x.id===calcId);if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),factor=(cible>0&&tot>0)?cible/tot:null,now=new Date();document.getElementById('pz-name').textContent=r.name;const sub=[];if(r.cat)sub.push(r.cat);sub.push('Base : '+tot.toFixed(1)+' g');if(factor)sub.push('→ Calculé pour : '+cible.toFixed(1)+' g');document.getElementById('pz-sub').textContent=sub.join(' · ');document.getElementById('pz-date').textContent='Imprimé le '+now.toLocaleDateString('fr-CH',{day:'2-digit',month:'long',year:'numeric'})+' à '+now.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'});document.getElementById('pz-table').innerHTML='<div class="result-table"><div class="result-head"><span>Ingrédient</span><span>Base (g)</span><span>'+(factor?'Pour '+cible.toFixed(0)+' g':'Base (g)')+'</span></div>'+r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor?base*factor:base;return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'—')+'</span><span class="c2">'+base.toFixed(1)+'</span><span class="c3 hi">'+calc.toFixed(1)+' g</span></div>';}).join('')+'<div class="result-row tot-row"><span class="c1">TOTAL</span><span class="c2">'+tot.toFixed(1)+' g</span><span class="c3">'+(factor?cible.toFixed(1)+' g':tot.toFixed(1)+' g')+'</span></div></div>';const old=document.title;document.title=r.name+(factor?' — '+cible.toFixed(0)+'g':'');window.print();document.title=old;}
-let notifEl=null,notifTimer=null;
-function notify(msg,err=false){if(!notifEl){notifEl=document.createElement('div');notifEl.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-60px);color:#fff;padding:9px 22px;border-radius:99px;z-index:9999;font-weight:700;font-size:14px;font-family:DM Sans,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;';document.body.appendChild(notifEl);}notifEl.textContent=msg;notifEl.style.background=err?'#A03020':'#3A7A2A';notifEl.style.transform='translateX(-50%) translateY(0)';clearTimeout(notifTimer);notifTimer=setTimeout(()=>{notifEl.style.transform='translateX(-50%) translateY(-60px)';},2800);}
+let notifTimer=null;
+let notifTimer=null;
+function notify(msg,err=false){
+  const old=document.getElementById('notif-toast');
+  if(old)old.remove();
+  const el=document.createElement('div');
+  el.id='notif-toast';
+  el.textContent=msg;
+  el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);color:#fff;padding:9px 22px;border-radius:99px;z-index:9999;font-weight:700;font-size:14px;font-family:DM Sans,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25);white-space:nowrap;transition:opacity .4s;opacity:1;background:'+(err?'#A03020':'#3A7A2A')+';';
+  document.body.appendChild(el);
+  clearTimeout(notifTimer);
+  notifTimer=setTimeout(()=>{el.style.opacity='0';setTimeout(()=>{if(el.parentNode)el.remove();},500);},2500);
+}
 init();
 </script>
 </body>
