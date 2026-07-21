@@ -218,8 +218,10 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   <input class="form-input big" type="text" id="edit-name" placeholder="Ex : Brioche viennoise…">
   <label class="form-label">Catégorie</label>
   <div class="ac-wrap">
-    <input class="form-input" type="text" id="edit-cat" placeholder="Taper pour chercher ou créer…" autocomplete="off" autocorrect="off" spellcheck="false">
-    <div class="ac-dropdown" id="cat-dropdown"></div>
+    <div id="cat-btn-wrap" style="position:relative">
+      <div id="edit-cat-btn" onclick="openCatPicker()" style="width:100%;padding:11px 13px;background:var(--parchment);border:1.5px solid var(--wheat);border-radius:10px;font-size:15px;color:var(--gray);cursor:pointer;">Choisir ou créer…</div>
+    </div>
+    <input type="hidden" id="edit-cat">
   </div>
   <div class="ing-section-title" id="edit-ing-title">Ingrédients</div>
   <div id="ing-editor-rows"></div>
@@ -323,7 +325,6 @@ function renderSidebar(){
 
 async function init(){
   recipes=loadFromStorage();
-  attachDropdown(document.getElementById('edit-cat'),document.getElementById('cat-dropdown'),getCats,v=>{document.getElementById('edit-cat').value=v;});
   renderHome();renderList();goTo('home');
   if(recipes.length===0){
     document.getElementById('migrate-banner').style.display='block';
@@ -419,6 +420,198 @@ function renderBigSearch(){
     el.appendChild(row);
   });
 }
+function openBottomPicker(title, items, onPick, onRename, onDelete, onNew){
+  const old=document.getElementById('bottom-picker-modal');
+  if(old)old.remove();
+
+  const overlay=document.createElement('div');
+  overlay.id='bottom-picker-modal';
+  overlay.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;justify-content:flex-end;';
+
+  const bg=document.createElement('div');
+  bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.5);';
+  bg.addEventListener('click',()=>overlay.remove());
+
+  const panel=document.createElement('div');
+  panel.style.cssText='position:relative;background:#fff;border-radius:20px 20px 0 0;padding:16px;max-height:80vh;display:flex;flex-direction:column;z-index:1;';
+
+  // Titre
+  const titleEl=document.createElement('div');
+  titleEl.style.cssText='font-family:Playfair Display,serif;font-size:17px;font-weight:700;color:var(--dark);text-align:center;margin-bottom:12px;';
+  titleEl.textContent=title;
+
+  // Barre recherche
+  const bar=document.createElement('div');
+  bar.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:10px;';
+  const searchIn=document.createElement('input');
+  searchIn.type='search';
+  searchIn.placeholder='Rechercher…';
+  searchIn.autocomplete='off';
+  searchIn.style.cssText='flex:1;padding:10px 14px;border:1.5px solid var(--wheat);border-radius:10px;font-size:15px;font-family:DM Sans,sans-serif;outline:none;';
+  const closeBtn=document.createElement('button');
+  closeBtn.textContent='✕';
+  closeBtn.style.cssText='background:var(--wheat);border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;flex-shrink:0;';
+  closeBtn.addEventListener('click',()=>overlay.remove());
+  bar.appendChild(searchIn);
+  bar.appendChild(closeBtn);
+
+  const list=document.createElement('div');
+  list.style.cssText='overflow-y:scroll;-webkit-overflow-scrolling:touch;flex:1;border:1px solid var(--wheat);border-radius:12px;';
+
+  function fillList(q){
+    list.innerHTML='';
+
+    // Bouton nouveau en premier
+    const newRow=document.createElement('div');
+    newRow.style.cssText='padding:14px 16px;font-size:15px;border-bottom:1px solid #eee;color:var(--caramel);font-weight:700;cursor:pointer;background:#fffdf6;';
+    newRow.textContent='＋ Nouveau…';
+    newRow.addEventListener('click',()=>{onNew();overlay.remove();});
+    list.appendChild(newRow);
+
+    const filtered=q?items.filter(n=>n.toLowerCase().includes(q.toLowerCase())):items;
+
+    filtered.forEach((n,k)=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #eee;background:'+(k%2===0?'#fff':'#fafafa')+';';
+
+      const label=document.createElement('div');
+      label.style.cssText='flex:1;font-size:15px;color:var(--dark);cursor:pointer;';
+      label.textContent=n;
+
+      const editBtn=document.createElement('button');
+      editBtn.textContent='✏️';
+      editBtn.style.cssText='background:none;border:none;font-size:16px;padding:4px 8px;cursor:pointer;';
+      editBtn.title='Renommer';
+
+      const delBtn=document.createElement('button');
+      delBtn.textContent='🗑️';
+      delBtn.style.cssText='background:none;border:none;font-size:16px;padding:4px 8px;cursor:pointer;';
+      delBtn.title='Supprimer';
+
+      // Sélectionner
+      let tm=false;
+      label.addEventListener('touchstart',()=>{tm=false;},{passive:true});
+      label.addEventListener('touchmove',()=>{tm=true;},{passive:true});
+      label.addEventListener('touchend',e=>{if(!tm){e.preventDefault();onPick(n);overlay.remove();}},{passive:false});
+      label.addEventListener('click',()=>{onPick(n);overlay.remove();});
+
+      // Renommer
+      editBtn.addEventListener('click',e=>{
+        e.stopPropagation();
+        const newName=prompt('Renommer "'+n+'" en :',n);
+        if(newName&&newName.trim()&&newName.trim()!==n){
+          onRename(n,newName.trim());
+          overlay.remove();
+        }
+      });
+
+      // Supprimer
+      delBtn.addEventListener('click',e=>{
+        e.stopPropagation();
+        if(confirm('Supprimer "'+n+'" de la liste ?')){
+          onDelete(n);
+          overlay.remove();
+        }
+      });
+
+      row.appendChild(label);
+      row.appendChild(editBtn);
+      row.appendChild(delBtn);
+      list.appendChild(row);
+    });
+
+    if(!filtered.length&&q){
+      const empty=document.createElement('div');
+      empty.style.cssText='padding:20px;text-align:center;color:#999;font-size:14px;';
+      empty.textContent='Aucun résultat';
+      list.appendChild(empty);
+    }
+  }
+
+  fillList('');
+  searchIn.addEventListener('input',()=>fillList(searchIn.value));
+
+  panel.appendChild(titleEl);
+  panel.appendChild(bar);
+  panel.appendChild(list);
+  overlay.appendChild(bg);
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  setTimeout(()=>searchIn.focus(),100);
+}
+
+function openCatPicker(){
+  const cats=getCats();
+  openBottomPicker(
+    '🏷️ Catégorie',
+    cats,
+    // onPick
+    v=>{
+      document.getElementById('edit-cat').value=v;
+      const btn=document.getElementById('edit-cat-btn');
+      btn.textContent=v;btn.style.color='var(--text)';
+    },
+    // onRename
+    (old,newName)=>{
+      recipes.forEach(r=>{if(r.cat===old)r.cat=newName;});
+      saveToStorage(recipes);renderHome();renderList();
+      document.getElementById('edit-cat').value=newName;
+      const btn=document.getElementById('edit-cat-btn');
+      btn.textContent=newName;btn.style.color='var(--text)';
+      notify('✓ Catégorie renommée !');
+    },
+    // onDelete
+    old=>{
+      recipes.forEach(r=>{if(r.cat===old)r.cat='';});
+      saveToStorage(recipes);renderHome();renderList();
+      if(document.getElementById('edit-cat').value===old){
+        document.getElementById('edit-cat').value='';
+        const btn=document.getElementById('edit-cat-btn');
+        btn.textContent='Choisir ou créer…';btn.style.color='var(--gray)';
+      }
+      notify('✓ Catégorie supprimée !');
+    },
+    // onNew
+    ()=>{
+      const val=prompt('Nom de la nouvelle catégorie :');
+      if(val&&val.trim()){
+        document.getElementById('edit-cat').value=val.trim();
+        const btn=document.getElementById('edit-cat-btn');
+        btn.textContent=val.trim();btn.style.color='var(--text)';
+      }
+    }
+  );
+}
+
+function openIngPicker(idx){
+  const allIngs=getAllIngs();
+  openBottomPicker(
+    '🧂 Ingrédient',
+    allIngs,
+    // onPick
+    v=>{editIngs[idx].n=v;renderIngRows();updateEditTotal();},
+    // onRename
+    (old,newName)=>{
+      recipes.forEach(r=>{r.ings.forEach(i=>{if(i.n===old)i.n=newName;});});
+      saveToStorage(recipes);
+      editIngs.forEach(i=>{if(i.n===old)i.n=newName;});
+      renderIngRows();updateEditTotal();
+      notify('✓ Ingrédient renommé dans toutes les recettes !');
+    },
+    // onDelete
+    old=>{
+      editIngs.forEach(i=>{if(i.n===old)i.n='';});
+      renderIngRows();updateEditTotal();
+      notify('✓ Retiré de cette recette.');
+    },
+    // onNew
+    ()=>{
+      const val=prompt('Nom de l\'ingrédient :');
+      if(val&&val.trim()){editIngs[idx].n=val.trim();renderIngRows();updateEditTotal();}
+    }
+  );
+}
+
 function filterByIdx(i){activeFilter=catIndex[i];document.getElementById('search-input').value='';goTo('list');renderList();}
 function clearFilter(){activeFilter=null;renderList();}
 function onSearch(){activeFilter=null;renderList();}
@@ -449,7 +642,7 @@ function renderList(){
 function showView(id){const r=recipes.find(x=>x.id===id);if(!r)return;currentId=id;const tot=totalOf(r.ings);document.getElementById('view-cat-badge').innerHTML=r.cat?'<div class="badge">'+esc(r.cat)+'</div>':'';let ih='<div class="section-title">Ingrédients — '+r.ings.length+' · Total : '+tot.toFixed(1)+' g</div>';if(!r.ings.length)ih+='<div class="empty">Aucun ingrédient.</div>';else ih+='<div class="ing-table">'+r.ings.map(i=>'<div class="ing-tr"><span class="ing-n">'+(esc(i.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="ing-q">'+(parseFloat(i.q)||0).toFixed(1)+' g</span></div>').join('')+'<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">'+tot.toFixed(1)+' g</span></div></div>';document.getElementById('view-ing-section').innerHTML=ih;document.getElementById('view-notes-section').innerHTML=r.notes?'<div class="section-title" style="margin-top:20px">Notes</div><div class="notes-box">'+esc(r.notes)+'</div>':'';PAGE_TITLES['view']=r.name;goTo('view');}
 
 function newRecipe(){const r={id:uid(),name:'Nouvelle recette',cat:'',notes:'',ings:[]};recipes.unshift(r);editRecipe(r.id);}
-function editRecipe(id){const r=recipes.find(x=>x.id===id);if(!r)return;editId=id;currentId=id;editIngs=r.ings.map(i=>({...i}));document.getElementById('edit-name').value=r.name;document.getElementById('edit-cat').value=r.cat||'';document.getElementById('edit-notes').value=r.notes||'';renderIngRows();updateEditTotal();goTo('edit');}
+function editRecipe(id){const r=recipes.find(x=>x.id===id);if(!r)return;editId=id;currentId=id;editIngs=r.ings.map(i=>({...i}));document.getElementById('edit-name').value=r.name;document.getElementById('edit-cat').value=r.cat||'';const catBtn=document.getElementById('edit-cat-btn');catBtn.textContent=r.cat||'Choisir ou créer…';catBtn.style.color=r.cat?'var(--text)':'var(--gray)';document.getElementById('edit-notes').value=r.notes||'';renderIngRows();updateEditTotal();goTo('edit');}
 
 function renderIngRows(){
   const container=document.getElementById('ing-editor-rows');
