@@ -99,9 +99,8 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .ing-row-edit { display:flex; gap:8px; align-items:flex-start; margin-bottom:8px; }
 .ing-ac-wrap { flex:1; position:relative; }
 .ing-ac-wrap .form-input { padding:9px 11px; font-size:14px; width:100%; }
-.ing-dropdown { display:none; position:absolute; left:0; right:0; top:calc(100% + 2px); background:#fff; border:2px solid var(--caramel); border-radius:12px; max-height:160px; overflow-y:scroll; -webkit-overflow-scrolling:touch; box-shadow:0 6px 20px rgba(0,0,0,.2); z-index:9999; }
-.ing-dropdown .ac-item { padding:13px 16px; font-size:15px; color:var(--dark); border-bottom:1px solid var(--wheat); display:flex; align-items:center; gap:8px; }
-.ing-dropdown .ac-item::before { content:'🧂'; font-size:13px; }
+.ing-dropdown { display:none; position:absolute; left:0; right:0; top:calc(100% + 2px); background:#fff; border:2px solid var(--caramel); border-radius:10px; max-height:160px; overflow-y:scroll; -webkit-overflow-scrolling:touch; box-shadow:0 6px 20px rgba(0,0,0,.2); z-index:9999; }
+.ing-dropdown .ac-item { padding:13px 16px; font-size:15px; color:var(--dark); border-bottom:1px solid var(--wheat); }
 .qty-wrap { position:relative; width:95px; flex-shrink:0; }
 .qty-wrap input { padding:9px 26px 9px 11px !important; font-size:14px; width:100%; }
 .qty-unit { position:absolute; right:9px; top:50%; transform:translateY(-50%); color:var(--gray); font-size:12px; pointer-events:none; }
@@ -455,23 +454,88 @@ function editRecipe(id){const r=recipes.find(x=>x.id===id);if(!r)return;editId=i
 function renderIngRows(){
   const container=document.getElementById('ing-editor-rows');
   container.innerHTML='';
+  const allIngs=getAllIngs();
   editIngs.forEach((ing,i)=>{
     const wrap=document.createElement('div');
     wrap.className='ing-row-edit';
-    const acWrap=document.createElement('div');
-    acWrap.className='ing-ac-wrap';
-    const nameInput=document.createElement('input');
-    nameInput.className='form-input';
-    nameInput.type='text';
-    nameInput.value=ing.n||'';
-    nameInput.placeholder='Ingrédient '+(i+1);
-    nameInput.autocomplete='off';
-    nameInput.autocorrect='off';
-    nameInput.spellcheck=false;
-    const drop=document.createElement('div');
-    drop.className='ing-dropdown';
-    acWrap.appendChild(nameInput);
-    acWrap.appendChild(drop);
+
+    // SELECT natif iOS
+    const sel=document.createElement('select');
+    sel.className='form-input';
+    sel.style.flex='1';
+    sel.style.webkitAppearance='menulist';
+    sel.style.appearance='menulist';
+    sel.style.color='var(--text)';
+    sel.style.background='var(--parchment)';
+
+    // Option vide par défaut
+    const defOpt=document.createElement('option');
+    defOpt.value='';
+    defOpt.textContent='— Choisir un ingrédient —';
+    sel.appendChild(defOpt);
+
+    // Option pour saisie manuelle
+    const manOpt=document.createElement('option');
+    manOpt.value='__manual__';
+    manOpt.textContent='✏️ Saisie manuelle…';
+    sel.appendChild(manOpt);
+
+    // Tous les ingrédients existants
+    allIngs.forEach(n=>{
+      const o=document.createElement('option');
+      o.value=n;
+      o.textContent=n;
+      if(n===ing.n) o.selected=true;
+      sel.appendChild(o);
+    });
+
+    // Si l'ingrédient actuel n'est pas dans la liste
+    if(ing.n && !allIngs.includes(ing.n)){
+      const o=document.createElement('option');
+      o.value=ing.n;
+      o.textContent=ing.n;
+      o.selected=true;
+      sel.appendChild(o);
+    }
+
+    if(!ing.n) defOpt.selected=true;
+
+    // Champ texte manuel (caché par défaut)
+    const manInput=document.createElement('input');
+    manInput.className='form-input';
+    manInput.type='text';
+    manInput.placeholder='Nom de l\'ingrédient…';
+    manInput.value=ing.n||'';
+    manInput.style.flex='1';
+    manInput.style.display='none';
+
+    sel.addEventListener('change',()=>{
+      if(sel.value==='__manual__'){
+        sel.style.display='none';
+        manInput.style.display='';
+        manInput.focus();
+        manInput.value='';
+        editIngs[i].n='';
+      } else {
+        editIngs[i].n=sel.value;
+      }
+    });
+
+    manInput.addEventListener('input',()=>editIngs[i].n=manInput.value);
+    manInput.addEventListener('blur',()=>{
+      if(manInput.value){
+        // Revenir au select avec la valeur saisie
+        const o=document.createElement('option');
+        o.value=manInput.value;
+        o.textContent=manInput.value;
+        o.selected=true;
+        sel.appendChild(o);
+        editIngs[i].n=manInput.value;
+        manInput.style.display='none';
+        sel.style.display='';
+      }
+    });
+
     const qWrap=document.createElement('div');
     qWrap.className='qty-wrap';
     const qInput=document.createElement('input');
@@ -486,16 +550,17 @@ function renderIngRows(){
     qUnit.textContent='g';
     qWrap.appendChild(qInput);
     qWrap.appendChild(qUnit);
+
     const delBtn=document.createElement('button');
     delBtn.className='del-btn';
     delBtn.textContent='✕';
-    wrap.appendChild(acWrap);
+
+    wrap.appendChild(sel);
+    wrap.appendChild(manInput);
     wrap.appendChild(qWrap);
     wrap.appendChild(delBtn);
     container.appendChild(wrap);
-    attachDropdown(nameInput,drop,getAllIngs,function(v){nameInput.value=v;editIngs[i].n=v;});
-    nameInput.addEventListener('input',()=>editIngs[i].n=nameInput.value);
-    nameInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();drop.style.display='none';addIng();}});
+
     qInput.addEventListener('input',()=>{editIngs[i].q=qInput.value;updateEditTotal();});
     qInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addIng();}});
     delBtn.addEventListener('click',()=>removeIng(i));
