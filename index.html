@@ -454,87 +454,16 @@ function editRecipe(id){const r=recipes.find(x=>x.id===id);if(!r)return;editId=i
 function renderIngRows(){
   const container=document.getElementById('ing-editor-rows');
   container.innerHTML='';
-  const allIngs=getAllIngs();
   editIngs.forEach((ing,i)=>{
     const wrap=document.createElement('div');
     wrap.className='ing-row-edit';
 
-    // SELECT natif iOS
-    const sel=document.createElement('select');
-    sel.className='form-input';
-    sel.style.flex='1';
-    sel.style.webkitAppearance='menulist';
-    sel.style.appearance='menulist';
-    sel.style.color='var(--text)';
-    sel.style.background='var(--parchment)';
-
-    // Option vide par défaut
-    const defOpt=document.createElement('option');
-    defOpt.value='';
-    defOpt.textContent='— Choisir un ingrédient —';
-    sel.appendChild(defOpt);
-
-    // Option pour saisie manuelle
-    const manOpt=document.createElement('option');
-    manOpt.value='__manual__';
-    manOpt.textContent='✏️ Saisie manuelle…';
-    sel.appendChild(manOpt);
-
-    // Tous les ingrédients existants
-    allIngs.forEach(n=>{
-      const o=document.createElement('option');
-      o.value=n;
-      o.textContent=n;
-      if(n===ing.n) o.selected=true;
-      sel.appendChild(o);
-    });
-
-    // Si l'ingrédient actuel n'est pas dans la liste
-    if(ing.n && !allIngs.includes(ing.n)){
-      const o=document.createElement('option');
-      o.value=ing.n;
-      o.textContent=ing.n;
-      o.selected=true;
-      sel.appendChild(o);
-    }
-
-    if(!ing.n) defOpt.selected=true;
-
-    // Champ texte manuel (caché par défaut)
-    const manInput=document.createElement('input');
-    manInput.className='form-input';
-    manInput.type='text';
-    manInput.placeholder='Nom de l\'ingrédient…';
-    manInput.value=ing.n||'';
-    manInput.style.flex='1';
-    manInput.style.display='none';
-
-    sel.addEventListener('change',()=>{
-      if(sel.value==='__manual__'){
-        sel.style.display='none';
-        manInput.style.display='';
-        manInput.focus();
-        manInput.value='';
-        editIngs[i].n='';
-      } else {
-        editIngs[i].n=sel.value;
-      }
-    });
-
-    manInput.addEventListener('input',()=>editIngs[i].n=manInput.value);
-    manInput.addEventListener('blur',()=>{
-      if(manInput.value){
-        // Revenir au select avec la valeur saisie
-        const o=document.createElement('option');
-        o.value=manInput.value;
-        o.textContent=manInput.value;
-        o.selected=true;
-        sel.appendChild(o);
-        editIngs[i].n=manInput.value;
-        manInput.style.display='none';
-        sel.style.display='';
-      }
-    });
+    // Bouton qui affiche la valeur et ouvre le picker
+    const nameBtn=document.createElement('div');
+    nameBtn.style.cssText='flex:1;padding:9px 11px;background:var(--parchment);border:1.5px solid var(--wheat);border-radius:10px;font-size:14px;color:'+(ing.n?'var(--text)':'var(--gray)')+';cursor:pointer;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    nameBtn.textContent=ing.n||'Choisir…';
+    nameBtn.addEventListener('click',()=>openIngPicker(i));
+    nameBtn.addEventListener('touchend',e=>{e.preventDefault();openIngPicker(i);},{passive:false});
 
     const qWrap=document.createElement('div');
     qWrap.className='qty-wrap';
@@ -555,8 +484,7 @@ function renderIngRows(){
     delBtn.className='del-btn';
     delBtn.textContent='✕';
 
-    wrap.appendChild(sel);
-    wrap.appendChild(manInput);
+    wrap.appendChild(nameBtn);
     wrap.appendChild(qWrap);
     wrap.appendChild(delBtn);
     container.appendChild(wrap);
@@ -565,6 +493,98 @@ function renderIngRows(){
     qInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addIng();}});
     delBtn.addEventListener('click',()=>removeIng(i));
   });
+}
+
+function openIngPicker(idx){
+  // Supprimer un picker existant
+  const old=document.getElementById('ing-picker-modal');
+  if(old)old.remove();
+
+  const allIngs=getAllIngs();
+
+  // Overlay
+  const overlay=document.createElement('div');
+  overlay.id='ing-picker-modal';
+  overlay.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;justify-content:flex-end;';
+
+  // Fond semi-transparent
+  const bg=document.createElement('div');
+  bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.5);';
+  bg.addEventListener('click',()=>overlay.remove());
+
+  // Panel du bas
+  const panel=document.createElement('div');
+  panel.style.cssText='position:relative;background:#fff;border-radius:20px 20px 0 0;padding:16px;max-height:75vh;display:flex;flex-direction:column;z-index:1;';
+
+  // Barre du haut
+  const bar=document.createElement('div');
+  bar.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:12px;';
+  const searchIn=document.createElement('input');
+  searchIn.type='search';
+  searchIn.placeholder='Rechercher un ingrédient…';
+  searchIn.autocomplete='off';
+  searchIn.style.cssText='flex:1;padding:10px 14px;border:1.5px solid var(--wheat);border-radius:10px;font-size:15px;font-family:DM Sans,sans-serif;outline:none;';
+  const closeBtn=document.createElement('button');
+  closeBtn.textContent='✕';
+  closeBtn.style.cssText='background:var(--wheat);border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;flex-shrink:0;';
+  closeBtn.addEventListener('click',()=>overlay.remove());
+  bar.appendChild(searchIn);
+  bar.appendChild(closeBtn);
+
+  // Liste
+  const list=document.createElement('div');
+  list.style.cssText='overflow-y:scroll;-webkit-overflow-scrolling:touch;flex:1;';
+
+  function fillList(q){
+    list.innerHTML='';
+    const filtered=q?allIngs.filter(n=>n.toLowerCase().includes(q.toLowerCase())):allIngs;
+
+    // Option saisie manuelle toujours en premier
+    const manRow=document.createElement('div');
+    manRow.style.cssText='padding:14px 16px;font-size:15px;border-bottom:1px solid #eee;color:var(--brown);font-weight:600;cursor:pointer;';
+    manRow.textContent='✏️ Nouveau…';
+    manRow.addEventListener('click',()=>{
+      const val=prompt('Nom de l\'ingrédient :');
+      if(val&&val.trim()){
+        editIngs[idx].n=val.trim();
+        renderIngRows();updateEditTotal();
+      }
+      overlay.remove();
+    });
+    list.appendChild(manRow);
+
+    filtered.forEach((n,k)=>{
+      const row=document.createElement('div');
+      row.style.cssText='padding:14px 16px;font-size:15px;border-bottom:1px solid #eee;cursor:pointer;background:'+(k%2===0?'#fff':'#fafafa')+';';
+      row.textContent=n;
+      let tm=false;
+      row.addEventListener('touchstart',()=>{tm=false;},{passive:true});
+      row.addEventListener('touchmove',()=>{tm=true;},{passive:true});
+      row.addEventListener('touchend',e=>{
+        if(!tm){e.preventDefault();editIngs[idx].n=n;renderIngRows();updateEditTotal();overlay.remove();}
+      },{passive:false});
+      row.addEventListener('click',()=>{editIngs[idx].n=n;renderIngRows();updateEditTotal();overlay.remove();});
+      list.appendChild(row);
+    });
+
+    if(!filtered.length&&q){
+      const empty=document.createElement('div');
+      empty.style.cssText='padding:20px;text-align:center;color:#999;font-size:14px;';
+      empty.textContent='Aucun résultat — utilise "✏️ Nouveau…"';
+      list.appendChild(empty);
+    }
+  }
+
+  fillList('');
+  searchIn.addEventListener('input',()=>fillList(searchIn.value));
+
+  panel.appendChild(bar);
+  panel.appendChild(list);
+  overlay.appendChild(bg);
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+
+  setTimeout(()=>searchIn.focus(),100);
 }
 
 function addIng(){editIngs.push({id:uid(),n:'',q:''});renderIngRows();updateEditTotal();setTimeout(()=>{const inputs=document.querySelectorAll('#ing-editor-rows input[type=text]');if(inputs.length)inputs[inputs.length-1].focus();},30);}
