@@ -505,6 +505,7 @@ function openBottomPicker(title, items, onPick, onRename, onDelete, onNew){
         rp.id='rename-panel';
         rp.style.cssText='position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.6);';
         rp.innerHTML='<div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px;"><div style="font-weight:700;font-size:16px;color:var(--dark);margin-bottom:14px;">Renommer</div><input id="rename-input" type="text" value="'+esc(n)+'" style="width:100%;padding:11px 13px;border:1.5px solid var(--caramel);border-radius:10px;font-size:16px;font-family:DM Sans,sans-serif;outline:none;margin-bottom:14px;box-sizing:border-box;"><div style="display:flex;gap:10px;"><button id="rename-cancel" style="flex:1;padding:11px;border:1px solid var(--wheat);border-radius:10px;background:#fff;font-size:15px;cursor:pointer;">Annuler</button><button id="rename-ok" style="flex:1;padding:11px;background:var(--caramel);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:15px;cursor:pointer;">Renommer</button></div></div>';
+        rp.addEventListener('click',e=>e.stopPropagation());
         document.body.appendChild(rp);
         const inp=document.getElementById('rename-input');
         inp.focus();inp.select();
@@ -525,6 +526,7 @@ function openBottomPicker(title, items, onPick, onRename, onDelete, onNew){
         cp.id='confirm-panel';
         cp.style.cssText='position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.6);';
         cp.innerHTML='<div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px;"><div style="font-weight:700;font-size:16px;color:var(--dark);margin-bottom:8px;">Supprimer</div><div style="font-size:14px;color:var(--gray);margin-bottom:18px;">Supprimer "<strong>'+esc(n)+'</strong>" ?</div><div style="display:flex;gap:10px;"><button id="del-cancel" style="flex:1;padding:11px;border:1px solid var(--wheat);border-radius:10px;background:#fff;font-size:15px;cursor:pointer;">Annuler</button><button id="del-ok" style="flex:1;padding:11px;background:var(--red);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:15px;cursor:pointer;">Supprimer</button></div></div>';
+        cp.addEventListener('click',e=>e.stopPropagation());
         document.body.appendChild(cp);
         document.getElementById('del-cancel').addEventListener('click',()=>cp.remove());
         document.getElementById('del-ok').addEventListener('click',()=>{onDelete(n);overlay.remove();cp.remove();});
