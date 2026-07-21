@@ -99,8 +99,9 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .ing-row-edit { display:flex; gap:8px; align-items:flex-start; margin-bottom:8px; }
 .ing-ac-wrap { flex:1; position:relative; }
 .ing-ac-wrap .form-input { padding:9px 11px; font-size:14px; width:100%; }
-.ing-dropdown { display:none; position:absolute; left:0; right:0; top:calc(100% + 2px); background:#fff; border:2px solid var(--caramel); border-radius:10px; max-height:180px; overflow-y:auto; box-shadow:0 6px 20px rgba(0,0,0,.15); z-index:9999; }
-.ing-dropdown .ac-item { padding:11px 13px; font-size:14px; }
+.ing-dropdown { display:none; position:absolute; left:0; right:0; top:calc(100% + 2px); background:#fff; border:2px solid var(--caramel); border-radius:12px; max-height:160px; overflow-y:scroll; -webkit-overflow-scrolling:touch; box-shadow:0 6px 20px rgba(0,0,0,.2); z-index:9999; }
+.ing-dropdown .ac-item { padding:13px 16px; font-size:15px; color:var(--dark); border-bottom:1px solid var(--wheat); display:flex; align-items:center; gap:8px; }
+.ing-dropdown .ac-item::before { content:'🧂'; font-size:13px; }
 .qty-wrap { position:relative; width:95px; flex-shrink:0; }
 .qty-wrap input { padding:9px 26px 9px 11px !important; font-size:14px; width:100%; }
 .qty-unit { position:absolute; right:9px; top:50%; transform:translateY(-50%); color:var(--gray); font-size:12px; pointer-events:none; }
@@ -246,16 +247,13 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   </div>
 </div>
 <div class="page" id="page-search">
-  <div style="position:relative;margin-bottom:14px">
+  <div style="position:relative;margin-bottom:10px">
     <span class="search-icon">🔍</span>
-    <input class="form-input" type="search" id="big-search" placeholder="Recette ou ingrédient…" oninput="renderBigSearch()" autocomplete="off" style="padding-left:36px;font-size:16px;">
+    <input class="form-input" type="search" id="big-search" placeholder="Rechercher une recette ou ingrédient…" oninput="renderBigSearch()" autocomplete="off" autocorrect="off" spellcheck="false" style="padding-left:36px;font-size:16px;border-radius:12px;">
   </div>
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <button class="qbtn on" id="sf-all" onclick="setSearchFilter('all')">Tout</button>
-    <button class="qbtn" id="sf-name" onclick="setSearchFilter('name')">Par nom</button>
-    <button class="qbtn" id="sf-ing" onclick="setSearchFilter('ing')">Par ingrédient</button>
+  <div id="big-search-results" style="border:1.5px solid var(--wheat);border-radius:12px;overflow:hidden;background:#fff;">
+    <div class="empty" style="padding:30px;color:var(--gray)">Tapez pour rechercher…</div>
   </div>
-  <div id="big-search-results"><div class="empty">Tapez un nom de recette ou un ingrédient…</div></div>
 </div>
 
 <div id="bottom-nav">
@@ -388,36 +386,37 @@ function importJSON(event){
   reader.readAsText(file);
   event.target.value='';
 }
-let searchFilter='all';
-function setSearchFilter(f){
-  searchFilter=f;
-  ['all','name','ing'].forEach(x=>document.getElementById('sf-'+x).classList.toggle('on',x===f));
-  renderBigSearch();
-}
 function renderBigSearch(){
   const q=(document.getElementById('big-search').value||'').trim().toLowerCase();
   const el=document.getElementById('big-search-results');
-  if(!q){el.innerHTML='<div class="empty">Tapez un nom de recette ou un ingrédient…</div>';return;}
+  if(!q){
+    el.innerHTML='<div class="empty" style="padding:30px;color:var(--gray)">Tapez pour rechercher…</div>';
+    return;
+  }
+  // Chercher par nom ET par ingrédient
   let results=[];
   recipes.forEach(r=>{
     const matchName=r.name.toLowerCase().includes(q);
     const matchedIngs=r.ings.filter(i=>(i.n||'').toLowerCase().includes(q));
-    const matchIngs=matchedIngs.length>0;
-    if(searchFilter==='all'&&(matchName||matchIngs)) results.push({r,matchName,matchedIngs});
-    else if(searchFilter==='name'&&matchName) results.push({r,matchName,matchedIngs:[]});
-    else if(searchFilter==='ing'&&matchIngs) results.push({r,matchName:false,matchedIngs});
+    if(matchName||matchedIngs.length>0) results.push({r,matchName,matchedIngs});
   });
-  if(!results.length){el.innerHTML='<div class="empty">Aucun résultat pour "'+esc(q)+'"</div>';return;}
+  if(!results.length){
+    el.innerHTML='<div class="empty" style="padding:30px;color:var(--gray)">Aucun résultat pour "'+esc(q)+'"</div>';
+    return;
+  }
   el.innerHTML='';
-  results.forEach(function({r,matchedIngs}){
+  results.forEach(function({r,matchName,matchedIngs},idx){
     const row=document.createElement('div');
-    row.className='recipe-row';
-    const ingHint=matchedIngs.length?'<div style="font-size:11px;color:var(--caramel);margin-top:3px">🧂 '+matchedIngs.map(i=>esc(i.n)).join(', ')+'</div>':'';
-    row.innerHTML='<div class="recipe-row-info"><div class="recipe-row-name">'+esc(r.name)+'</div><div class="recipe-row-meta">'+(r.cat?'<span>'+esc(r.cat)+'</span>':'')+'<span>'+r.ings.length+' ingr.</span><span class="meta-g">'+totalOf(r.ings).toFixed(0)+'g</span></div>'+ingHint+'</div><div class="row-btns"><button class="row-btn">✏️</button><button class="row-btn">🧮</button></div>';
-    row.querySelector('.recipe-row-info').addEventListener('click',()=>showView(r.id));
-    const btns=row.querySelectorAll('.row-btn');
-    btns[0].addEventListener('click',()=>editRecipe(r.id));
-    btns[1].addEventListener('click',()=>showCalc(r.id));
+    row.style.cssText='display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--wheat);background:'+(idx%2===0?'#fff':'var(--parchment)')+';';
+    const ingHint=matchedIngs.length?'<div style="font-size:12px;color:var(--caramel);margin-top:3px">🧂 '+matchedIngs.map(i=>esc(i.n)).join(', ')+'</div>':'';
+    const catHint=r.cat?'<span style="font-size:11px;color:var(--gray);margin-right:8px">'+esc(r.cat)+'</span>':'';
+    row.innerHTML='<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:15px;color:var(--dark)">'+esc(r.name)+'</div><div style="margin-top:2px">'+catHint+'<span style="font-size:11px;color:var(--gray)">'+r.ings.length+' ingr. · '+totalOf(r.ings).toFixed(0)+'g</span></div>'+ingHint+'</div><span style="color:var(--gray);font-size:18px;padding-left:8px">›</span>';
+    row.addEventListener('click',()=>showView(r.id));
+    // Touch support iPhone
+    let tm=false;
+    row.addEventListener('touchstart',()=>{tm=false;},{passive:true});
+    row.addEventListener('touchmove',()=>{tm=true;},{passive:true});
+    row.addEventListener('touchend',e=>{if(!tm){e.preventDefault();showView(r.id);}},{passive:false});
     el.appendChild(row);
   });
 }
