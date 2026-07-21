@@ -245,10 +245,24 @@ textarea.form-input { resize:vertical; line-height:1.6; }
     <div class="result-row tot-row"><span class="c1">TOTAL</span><span class="c2" id="tot-base">—</span><span class="c3" id="tot-result">—</span></div>
   </div>
 </div>
+<div class="page" id="page-search">
+  <div style="position:relative;margin-bottom:14px">
+    <span class="search-icon">🔍</span>
+    <input class="form-input" type="search" id="big-search" placeholder="Recette ou ingrédient…" oninput="renderBigSearch()" autocomplete="off" style="padding-left:36px;font-size:16px;">
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <button class="qbtn on" id="sf-all" onclick="setSearchFilter('all')">Tout</button>
+    <button class="qbtn" id="sf-name" onclick="setSearchFilter('name')">Par nom</button>
+    <button class="qbtn" id="sf-ing" onclick="setSearchFilter('ing')">Par ingrédient</button>
+  </div>
+  <div id="big-search-results"><div class="empty">Tapez un nom de recette ou un ingrédient…</div></div>
+</div>
+
 <div id="bottom-nav">
   <button class="bnav on" id="bn-home" onclick="goTo('home')"><span class="bi">🏠</span>Accueil</button>
   <button class="bnav" id="bn-list" onclick="goTo('list')"><span class="bi">📖</span>Recettes</button>
   <button class="bnav" id="bn-new" onclick="newRecipe()"><span class="bi">＋</span>Nouvelle</button>
+  <button class="bnav" id="bn-search" onclick="goTo('search');setTimeout(()=>document.getElementById('big-search').focus(),100)"><span class="bi">🔍</span>Recherche</button>
   <button class="bnav" id="bn-calc" onclick="calcCurrent()"><span class="bi">🧮</span>Calculer</button>
   <button class="bnav" onclick="openSidebar()"><span class="bi">☰</span>Index</button>
 </div>
@@ -340,10 +354,10 @@ async function migrateFromSupabase(){
   }
 }
 
-const PAGES=['home','list','view','edit','calc'];
-const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur'};
+const PAGES=['home','list','view','edit','calc','search'];
+const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur',search:'🔍 Recherche'};
 function goTo(name){PAGES.forEach(p=>{document.getElementById('page-'+p).classList.toggle('active',p===name);const bn=document.getElementById('bn-'+p);if(bn)bn.classList.toggle('on',p===name);});document.getElementById('topbar-title').textContent=PAGE_TITLES[name]||PAGE_TITLES.home;renderTopbarActions(name);window.scrollTo(0,0);}
-function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:6px">💾 Export</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:6px">＋ Nouvelle</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()" style="margin-right:6px">📂 Import</button><button class="tb-btn" onclick="goTo(\'search\');setTimeout(()=>document.getElementById(\'big-search\').focus(),100)">🔍</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId)el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId)el.innerHTML='<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';}
+function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:6px">💾 Export</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:6px">＋ Nouvelle</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()">📂 Import</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId)el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId)el.innerHTML='<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';}
 function exportJSON(){
   const data=JSON.stringify(recipes,null,2);
   const blob=new Blob([data],{type:'application/json'});
@@ -373,6 +387,39 @@ function importJSON(event){
   };
   reader.readAsText(file);
   event.target.value='';
+}
+let searchFilter='all';
+function setSearchFilter(f){
+  searchFilter=f;
+  ['all','name','ing'].forEach(x=>document.getElementById('sf-'+x).classList.toggle('on',x===f));
+  renderBigSearch();
+}
+function renderBigSearch(){
+  const q=(document.getElementById('big-search').value||'').trim().toLowerCase();
+  const el=document.getElementById('big-search-results');
+  if(!q){el.innerHTML='<div class="empty">Tapez un nom de recette ou un ingrédient…</div>';return;}
+  let results=[];
+  recipes.forEach(r=>{
+    const matchName=r.name.toLowerCase().includes(q);
+    const matchedIngs=r.ings.filter(i=>(i.n||'').toLowerCase().includes(q));
+    const matchIngs=matchedIngs.length>0;
+    if(searchFilter==='all'&&(matchName||matchIngs)) results.push({r,matchName,matchedIngs});
+    else if(searchFilter==='name'&&matchName) results.push({r,matchName,matchedIngs:[]});
+    else if(searchFilter==='ing'&&matchIngs) results.push({r,matchName:false,matchedIngs});
+  });
+  if(!results.length){el.innerHTML='<div class="empty">Aucun résultat pour "'+esc(q)+'"</div>';return;}
+  el.innerHTML='';
+  results.forEach(function({r,matchedIngs}){
+    const row=document.createElement('div');
+    row.className='recipe-row';
+    const ingHint=matchedIngs.length?'<div style="font-size:11px;color:var(--caramel);margin-top:3px">🧂 '+matchedIngs.map(i=>esc(i.n)).join(', ')+'</div>':'';
+    row.innerHTML='<div class="recipe-row-info"><div class="recipe-row-name">'+esc(r.name)+'</div><div class="recipe-row-meta">'+(r.cat?'<span>'+esc(r.cat)+'</span>':'')+'<span>'+r.ings.length+' ingr.</span><span class="meta-g">'+totalOf(r.ings).toFixed(0)+'g</span></div>'+ingHint+'</div><div class="row-btns"><button class="row-btn">✏️</button><button class="row-btn">🧮</button></div>';
+    row.querySelector('.recipe-row-info').addEventListener('click',()=>showView(r.id));
+    const btns=row.querySelectorAll('.row-btn');
+    btns[0].addEventListener('click',()=>editRecipe(r.id));
+    btns[1].addEventListener('click',()=>showCalc(r.id));
+    el.appendChild(row);
+  });
 }
 function filterByIdx(i){activeFilter=catIndex[i];document.getElementById('search-input').value='';goTo('list');renderList();}
 function clearFilter(){activeFilter=null;renderList();}
