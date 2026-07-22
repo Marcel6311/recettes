@@ -203,7 +203,10 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   </div>
 </div>
 <div class="page" id="page-list">
-  <div class="search-wrap"><span class="search-icon">🔍</span><input type="search" id="search-input" placeholder="Rechercher une recette…" oninput="onSearch()" autocomplete="off"></div>
+  <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+    <div class="search-wrap" style="flex:1;margin-bottom:0"><span class="search-icon">🔍</span><input type="search" id="search-input" placeholder="Rechercher une recette…" oninput="onSearch()" autocomplete="off"></div>
+    <button id="sort-btn" onclick="toggleSort()" style="background:var(--parchment);border:1.5px solid var(--wheat);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;color:var(--brown);cursor:pointer;white-space:nowrap;flex-shrink:0;">A→Z</button>
+  </div>
   <div id="filter-bar-wrap"></div>
   <div id="recipe-list-content"></div>
 </div>
@@ -215,7 +218,11 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 </div>
 <div class="page" id="page-edit">
   <label class="form-label">Nom de la recette</label>
-  <input class="form-input big" type="text" id="edit-name" placeholder="Ex : Brioche viennoise…">
+  <input class="form-input big" type="text" id="edit-name" placeholder="Ex : Brioche viennoise…" oninput="showSimilar()">
+  <div id="similar-wrap" style="display:none;margin-top:6px;border:1.5px solid var(--caramel);border-radius:10px;overflow:hidden;background:#fff;">
+    <div style="padding:6px 12px;font-size:11px;font-weight:700;color:var(--caramel);text-transform:uppercase;letter-spacing:.5px;background:rgba(196,154,60,.08);">Recettes similaires existantes</div>
+    <div id="similar-list"></div>
+  </div>
   <label class="form-label">Catégorie</label>
   <div class="ac-wrap">
     <div id="cat-btn-wrap" style="position:relative">
@@ -707,6 +714,23 @@ function renderManage(){
   });
 }
 
+function showSimilar(){
+  const q=(document.getElementById('edit-name').value||'').trim().toLowerCase();
+  const wrap=document.getElementById('similar-wrap');
+  const list=document.getElementById('similar-list');
+  if(q.length<2){wrap.style.display='none';return;}
+  const similar=recipes.filter(r=>r.id!==editId&&r.name.toLowerCase().includes(q));
+  if(!similar.length){wrap.style.display='none';return;}
+  list.innerHTML='';
+  similar.slice(0,5).forEach(r=>{
+    const row=document.createElement('div');
+    row.style.cssText='padding:10px 12px;border-bottom:1px solid var(--wheat);font-size:14px;color:var(--dark);display:flex;align-items:center;justify-content:space-between;';
+    row.innerHTML='<span>'+esc(r.name)+'</span><span style="font-size:11px;color:var(--gray)">'+esc(r.cat||'')+'</span>';
+    list.appendChild(row);
+  });
+  wrap.style.display='block';
+}
+
 function filterByIdx(i){activeFilter=catIndex[i];document.getElementById('search-input').value='';goTo('list');renderList();}
 function clearFilter(){activeFilter=null;renderList();}
 function onSearch(){activeFilter=null;renderList();}
@@ -721,11 +745,20 @@ function renderHome(){
   if(n){rw.innerHTML='<div class="section-title">Recettes récentes</div><div class="card-grid" id="card-grid-el"></div>';const cg=document.getElementById('card-grid-el');recipes.slice(0,8).forEach(r=>{const d=document.createElement('div');d.className='card';d.innerHTML='<div class="card-name">'+esc(r.name)+'</div>'+(r.cat?'<div class="card-cat">'+esc(r.cat)+'</div>':'')+'<div class="card-total">'+totalOf(r.ings).toFixed(0)+' g</div>';d.addEventListener('click',()=>showView(r.id));cg.appendChild(d);});}else rw.innerHTML='';
 }
 
+let sortAlpha=false;
+function toggleSort(){
+  sortAlpha=!sortAlpha;
+  document.getElementById('sort-btn').textContent=sortAlpha?'Date':'A→Z';
+  document.getElementById('sort-btn').style.background=sortAlpha?'var(--caramel)':'var(--parchment)';
+  document.getElementById('sort-btn').style.color=sortAlpha?'#fff':'var(--brown)';
+  renderList();
+}
 function renderList(){
   const q=(document.getElementById('search-input').value||'').toLowerCase();
-  let filtered=recipes;
+  let filtered=recipes.slice();
   if(activeFilter)filtered=filtered.filter(r=>(r.cat||'')===activeFilter);
   if(q)filtered=filtered.filter(r=>r.name.toLowerCase().includes(q)||(r.cat||'').toLowerCase().includes(q));
+  if(sortAlpha)filtered.sort((a,b)=>a.name.localeCompare(b,'fr'));
   const fb=document.getElementById('filter-bar-wrap');
   if(activeFilter){fb.innerHTML='';const bar=document.createElement('div');bar.className='filter-bar';bar.innerHTML='🏷️ <strong>'+esc(activeFilter)+'</strong> ('+filtered.length+')';const btn=document.createElement('button');btn.className='filter-clear';btn.textContent='✕';btn.addEventListener('click',clearFilter);bar.appendChild(btn);fb.appendChild(bar);}else fb.innerHTML='';
   const el=document.getElementById('recipe-list-content');
