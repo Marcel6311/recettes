@@ -758,7 +758,7 @@ function renderList(){
   let filtered=recipes.slice();
   if(activeFilter)filtered=filtered.filter(r=>(r.cat||'')===activeFilter);
   if(q)filtered=filtered.filter(r=>r.name.toLowerCase().includes(q)||(r.cat||'').toLowerCase().includes(q));
-  if(sortAlpha)filtered.sort((a,b)=>a.name.localeCompare(b,'fr'));
+  if(sortAlpha)filtered.sort((a,b)=>a.name.localeCompare(b.name,'fr'));
   const fb=document.getElementById('filter-bar-wrap');
   if(activeFilter){fb.innerHTML='';const bar=document.createElement('div');bar.className='filter-bar';bar.innerHTML='🏷️ <strong>'+esc(activeFilter)+'</strong> ('+filtered.length+')';const btn=document.createElement('button');btn.className='filter-clear';btn.textContent='✕';btn.addEventListener('click',clearFilter);bar.appendChild(btn);fb.appendChild(bar);}else fb.innerHTML='';
   const el=document.getElementById('recipe-list-content');
