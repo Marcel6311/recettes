@@ -656,60 +656,50 @@ function openIngPicker(idx){
 
 function renderManage(){
   const q=(document.getElementById('manage-search').value||'').toLowerCase();
-  const allIngs=getAllIngs().filter(n=>!q||n.toLowerCase().includes(q));
+  const counts={};
+  recipes.forEach(r=>{r.ings.forEach(i=>{if(i.n)counts[i.n]=(counts[i.n]||0)+1;});});
+  const lowerMap={};
+  Object.keys(counts).forEach(n=>{const l=n.toLowerCase();if(!lowerMap[l])lowerMap[l]=[];lowerMap[l].push(n);});
+  const allIngs=Object.keys(counts).filter(n=>!q||n.toLowerCase().includes(q)).sort((a,b)=>a.localeCompare(b));
   const el=document.getElementById('manage-list');
   if(!allIngs.length){el.innerHTML='<div class="empty" style="padding:24px">Aucun ingrédient</div>';return;}
   el.innerHTML='';
   allIngs.forEach((n,k)=>{
+    const isDuplicate=lowerMap[n.toLowerCase()].length>1;
     const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--wheat);background:'+(k%2===0?'#fff':'var(--parchment)')+';';
-
+    row.style.cssText='display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--wheat);background:'+(isDuplicate?'rgba(196,154,60,.12)':(k%2===0?'#fff':'var(--parchment)'))+';';
     const nameEl=document.createElement('div');
     nameEl.style.cssText='flex:1;font-size:14px;color:var(--dark);';
-    nameEl.textContent=n;
-
+    nameEl.innerHTML=esc(n)+(isDuplicate?' <span style="font-size:11px;color:var(--caramel);font-weight:700">⚠️ doublon</span>':'')+' <span style="font-size:11px;color:var(--gray)">('+counts[n]+' recette'+(counts[n]>1?'s':'')+')</span>';
     const editBtn=document.createElement('button');
     editBtn.textContent='✏️';
     editBtn.style.cssText='background:none;border:1px solid var(--wheat);border-radius:7px;width:34px;height:34px;font-size:14px;cursor:pointer;flex-shrink:0;';
+    row.appendChild(nameEl);row.appendChild(editBtn);el.appendChild(row);
 
-    row.appendChild(nameEl);
-    row.appendChild(editBtn);
-    el.appendChild(row);
-
-    // Appuyer sur ✏️ remplace la ligne par un champ de saisie
     editBtn.addEventListener('click',()=>{
       row.innerHTML='';
       const input=document.createElement('input');
-      input.type='text';
-      input.value=n;
+      input.type='text';input.value=n;
       input.style.cssText='flex:1;padding:8px 10px;border:1.5px solid var(--caramel);border-radius:8px;font-size:14px;font-family:DM Sans,sans-serif;outline:none;min-width:0;';
-
       const okBtn=document.createElement('button');
       okBtn.textContent='✓';
       okBtn.style.cssText='background:var(--green);color:#fff;border:none;border-radius:7px;width:34px;height:34px;font-size:16px;cursor:pointer;flex-shrink:0;margin-left:6px;';
-
       const cancelBtn=document.createElement('button');
       cancelBtn.textContent='✕';
       cancelBtn.style.cssText='background:var(--wheat);border:none;border-radius:7px;width:34px;height:34px;font-size:14px;cursor:pointer;flex-shrink:0;margin-left:4px;';
-
       row.style.cssText='display:flex;align-items:center;gap:4px;padding:8px 14px;border-bottom:1px solid var(--wheat);background:var(--parchment);';
-      row.appendChild(input);
-      row.appendChild(okBtn);
-      row.appendChild(cancelBtn);
-
+      row.appendChild(input);row.appendChild(okBtn);row.appendChild(cancelBtn);
       input.focus();input.select();
-
-      // Valider — renomme dans toutes les recettes
       function doRename(){
         const newName=input.value.trim();
-        if(newName&&newName!==n){
+        if(newName){
+          // Renomme n → newName ET fusionne toutes les variantes du même nom
           recipes.forEach(r=>{r.ings.forEach(i=>{if(i.n===n)i.n=newName;});});
           saveToStorage(recipes);
           notify('✓ "'+n+'" → "'+newName+'" dans toutes les recettes !');
         }
         renderManage();
       }
-
       okBtn.addEventListener('click',doRename);
       input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doRename();}});
       cancelBtn.addEventListener('click',()=>renderManage());
