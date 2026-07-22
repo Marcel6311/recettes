@@ -257,6 +257,14 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   </div>
 </div>
 
+<div class="page" id="page-manage">
+  <div style="position:relative;margin-bottom:12px">
+    <span class="search-icon">🔍</span>
+    <input class="form-input" type="search" id="manage-search" placeholder="Filtrer les ingrédients…" oninput="renderManage()" autocomplete="off" style="padding-left:36px;">
+  </div>
+  <div id="manage-list" style="border:1px solid var(--wheat);border-radius:12px;overflow:hidden;"></div>
+</div>
+
 <div id="bottom-nav">
   <button class="bnav on" id="bn-home" onclick="goTo('home')"><span class="bi">🏠</span>Accueil</button>
   <button class="bnav" id="bn-list" onclick="goTo('list')"><span class="bi">📖</span>Recettes</button>
@@ -352,10 +360,10 @@ async function migrateFromSupabase(){
   }
 }
 
-const PAGES=['home','list','view','edit','calc','search'];
-const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur',search:'🔍 Recherche'};
+const PAGES=['home','list','view','edit','calc','search','manage'];
+const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur',search:'🔍 Recherche',manage:'⚙️ Gérer les ingrédients'};
 function goTo(name){PAGES.forEach(p=>{document.getElementById('page-'+p).classList.toggle('active',p===name);const bn=document.getElementById('bn-'+p);if(bn)bn.classList.toggle('on',p===name);});document.getElementById('topbar-title').textContent=PAGE_TITLES[name]||PAGE_TITLES.home;renderTopbarActions(name);window.scrollTo(0,0);}
-function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:6px">💾 Export</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:6px">＋ Nouvelle</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()">📂 Import</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId)el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId)el.innerHTML='<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';}
+function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:4px">💾</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:4px">＋</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()" style="margin-right:4px">📂</button><button class="tb-btn" onclick="goTo(\'manage\');renderManage()">⚙️</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId)el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId)el.innerHTML='<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';}
 function exportJSON(){
   const data=JSON.stringify(recipes,null,2);
   const blob=new Blob([data],{type:'application/json'});
@@ -644,6 +652,69 @@ function openIngPicker(idx){
       });
     }
   );
+}
+
+function renderManage(){
+  const q=(document.getElementById('manage-search').value||'').toLowerCase();
+  const allIngs=getAllIngs().filter(n=>!q||n.toLowerCase().includes(q));
+  const el=document.getElementById('manage-list');
+  if(!allIngs.length){el.innerHTML='<div class="empty" style="padding:24px">Aucun ingrédient</div>';return;}
+  el.innerHTML='';
+  allIngs.forEach((n,k)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--wheat);background:'+(k%2===0?'#fff':'var(--parchment)')+';';
+
+    const nameEl=document.createElement('div');
+    nameEl.style.cssText='flex:1;font-size:14px;color:var(--dark);';
+    nameEl.textContent=n;
+
+    const editBtn=document.createElement('button');
+    editBtn.textContent='✏️';
+    editBtn.style.cssText='background:none;border:1px solid var(--wheat);border-radius:7px;width:34px;height:34px;font-size:14px;cursor:pointer;flex-shrink:0;';
+
+    row.appendChild(nameEl);
+    row.appendChild(editBtn);
+    el.appendChild(row);
+
+    // Appuyer sur ✏️ remplace la ligne par un champ de saisie
+    editBtn.addEventListener('click',()=>{
+      row.innerHTML='';
+      const input=document.createElement('input');
+      input.type='text';
+      input.value=n;
+      input.style.cssText='flex:1;padding:8px 10px;border:1.5px solid var(--caramel);border-radius:8px;font-size:14px;font-family:DM Sans,sans-serif;outline:none;min-width:0;';
+
+      const okBtn=document.createElement('button');
+      okBtn.textContent='✓';
+      okBtn.style.cssText='background:var(--green);color:#fff;border:none;border-radius:7px;width:34px;height:34px;font-size:16px;cursor:pointer;flex-shrink:0;margin-left:6px;';
+
+      const cancelBtn=document.createElement('button');
+      cancelBtn.textContent='✕';
+      cancelBtn.style.cssText='background:var(--wheat);border:none;border-radius:7px;width:34px;height:34px;font-size:14px;cursor:pointer;flex-shrink:0;margin-left:4px;';
+
+      row.style.cssText='display:flex;align-items:center;gap:4px;padding:8px 14px;border-bottom:1px solid var(--wheat);background:var(--parchment);';
+      row.appendChild(input);
+      row.appendChild(okBtn);
+      row.appendChild(cancelBtn);
+
+      input.focus();input.select();
+
+      // Valider — renomme dans toutes les recettes
+      function doRename(){
+        const newName=input.value.trim();
+        if(newName&&newName!==n){
+          recipes.forEach(r=>{r.ings.forEach(i=>{if(i.n===n)i.n=newName;});});
+          saveToStorage(recipes);
+          notify('✓ "'+n+'" → "'+newName+'" dans toutes les recettes !');
+        }
+        renderManage();
+      }
+
+      okBtn.addEventListener('click',doRename);
+      input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doRename();}});
+      cancelBtn.addEventListener('click',()=>renderManage());
+    });
+  });
 }
 
 function filterByIdx(i){activeFilter=catIndex[i];document.getElementById('search-input').value='';goTo('list');renderList();}
