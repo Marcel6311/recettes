@@ -953,7 +953,6 @@ function showArchiveView(id){
   const r=archives.find(x=>x.id===id);
   if(!r)return;
   currentId=id;
-  // Réutilise la page view
   const catBadge=document.getElementById('view-cat-badge');
   catBadge.innerHTML='<span class="badge" style="background:var(--brown);color:var(--wheat);">🗂️ Archive historique</span>'+(r.serves?'<span class="badge" style="margin-left:6px">'+r.serves+' personnes</span>':'');
   const ingSection=document.getElementById('view-ing-section');
@@ -969,19 +968,87 @@ function showArchiveView(id){
   // Navigation archives
   const nav=document.getElementById('view-nav');
   nav.innerHTML='';
-  const allArch=loadArchives();
-  const idx=allArch.findIndex(x=>x.id===id);
+  const idx=archives.findIndex(x=>x.id===id);
+  // Ligne 1 : flèches précédent / suivant
+  const navRow=document.createElement('div');
+  navRow.style.cssText='display:flex;gap:8px;width:100%;';
+  if(idx>0){
+    const prev=document.createElement('button');
+    prev.className='tb-btn';
+    prev.style.cssText='flex:1;padding:11px;font-size:13px;text-align:left;';
+    prev.innerHTML='← '+esc(archives[idx-1].name);
+    prev.addEventListener('click',()=>showArchiveView(archives[idx-1].id));
+    navRow.appendChild(prev);
+  }else{
+    const spacer=document.createElement('div');spacer.style.flex='1';navRow.appendChild(spacer);
+  }
+  if(idx<archives.length-1){
+    const next=document.createElement('button');
+    next.className='tb-btn';
+    next.style.cssText='flex:1;padding:11px;font-size:13px;text-align:right;';
+    next.innerHTML=esc(archives[idx+1].name)+' →';
+    next.addEventListener('click',()=>showArchiveView(archives[idx+1].id));
+    navRow.appendChild(next);
+  }else{
+    const spacer=document.createElement('div');spacer.style.flex='1';navRow.appendChild(spacer);
+  }
+  nav.appendChild(navRow);
+  // Ligne 2 : actions
+  const actRow=document.createElement('div');
+  actRow.style.cssText='display:flex;gap:8px;width:100%;margin-top:6px;';
   const backBtn=document.createElement('button');
   backBtn.className='tb-btn';backBtn.style.cssText='flex:1;padding:11px;';
-  backBtn.textContent='← Archives';
+  backBtn.textContent='↩ Archives';
   backBtn.addEventListener('click',()=>{goTo('archives');renderArchives();});
-  nav.appendChild(backBtn);
+  actRow.appendChild(backBtn);
+  const editBtn=document.createElement('button');
+  editBtn.className='tb-btn';editBtn.style.cssText='flex:1;padding:11px;';
+  editBtn.textContent='✏️ Modifier';
+  editBtn.addEventListener('click',()=>editArchive(id));
+  actRow.appendChild(editBtn);
   const calcBtn=document.createElement('button');
   calcBtn.className='tb-btn accent';calcBtn.style.cssText='flex:1;padding:11px;';
   calcBtn.textContent='🧮 Calculer';
   calcBtn.addEventListener('click',()=>showCalcArchive(id));
-  nav.appendChild(calcBtn);
+  actRow.appendChild(calcBtn);
+  nav.appendChild(actRow);
   PAGE_TITLES['view']=r.name;goTo('view');
+}
+
+function editArchive(id){
+  const archives=loadArchives();
+  const r=archives.find(x=>x.id===id);
+  if(!r)return;
+  editId=id;currentId=id;
+  editIngs=r.ings.map(i=>({...i}));
+  document.getElementById('edit-name').value=r.name;
+  document.getElementById('edit-cat').value='Archives';
+  const catBtn=document.getElementById('edit-cat-btn');
+  catBtn.textContent='Archives';catBtn.style.color='var(--text)';
+  document.getElementById('edit-notes').value=r.notes||'';
+  renderIngRows();updateEditTotal();
+  // Surcharge saveRecipe pour les archives
+  window._archiveEditMode=true;
+  goTo('edit');
+}
+
+async function saveArchiveEdit(){
+  const name=document.getElementById('edit-name').value.trim()||'Sans titre';
+  const notes=document.getElementById('edit-notes').value;
+  const archives=loadArchives();
+  const idx=archives.findIndex(x=>x.id===editId);
+  if(idx<0)return;
+  archives[idx]={...archives[idx],name,notes,ings:editIngs.map(i=>({...i}))};
+  saveArchives(archives);
+  window._archiveEditMode=false;
+  notify('✓ Archive sauvegardée !');
+  showArchiveView(editId);
+}
+
+const _origSaveRecipe=saveRecipe;
+async function saveRecipe(){
+  if(window._archiveEditMode){await saveArchiveEdit();return;}
+  await _origSaveRecipe();
 }
 
 function showCalcArchive(id){
