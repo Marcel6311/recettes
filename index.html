@@ -278,9 +278,12 @@ textarea.form-input { resize:vertical; line-height:1.6; }
     <h1 style="font-size:22px">Archives historiques</h1>
     <p>Fiches de cuisine ~1955</p>
   </div>
-  <div class="search-wrap" style="margin-bottom:10px">
-    <span class="search-icon">🔍</span>
-    <input type="search" id="arch-search" placeholder="Rechercher dans les archives…" oninput="renderArchives()" autocomplete="off">
+  <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+    <div class="search-wrap" style="flex:1;margin-bottom:0">
+      <span class="search-icon">🔍</span>
+      <input type="search" id="arch-search" placeholder="Rechercher dans les archives…" oninput="renderArchives()" autocomplete="off">
+    </div>
+    <button onclick="exportArchivesJSON()" style="background:var(--brown);border:none;border-radius:10px;padding:10px 13px;color:var(--wheat);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">💾 Exporter</button>
   </div>
   <div id="arch-list-content"></div>
 </div>
@@ -1049,6 +1052,20 @@ const _origSaveRecipe=saveRecipe;
 async function saveRecipe(){
   if(window._archiveEditMode){await saveArchiveEdit();return;}
   await _origSaveRecipe();
+}
+
+function exportArchivesJSON(){
+  const archives=loadArchives();
+  if(!archives.length){notify('Aucune archive à exporter.',true);return;}
+  const data=JSON.stringify(archives,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='archives_historiques-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  notify('✓ '+archives.length+' fiches exportées !');
 }
 
 function showCalcArchive(id){
