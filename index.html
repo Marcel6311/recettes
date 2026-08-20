@@ -239,11 +239,17 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 </div>
 <div class="page" id="page-calc">
   <div class="calc-card"><div class="calc-card-name" id="calc-name"></div><div class="calc-card-meta" id="calc-meta"></div></div>
-  <label class="form-label">Quantité totale souhaitée (grammes)</label>
+  <div id="calc-mode-toggle" style="display:none;margin-bottom:12px;">
+    <div style="display:flex;background:var(--parchment);border:1.5px solid var(--wheat);border-radius:10px;overflow:hidden;">
+      <button id="mode-g-btn" onclick="setCalcMode('g')" style="flex:1;padding:9px;border:none;background:var(--caramel);color:#fff;font-weight:700;font-size:13px;font-family:DM Sans,sans-serif;cursor:pointer;">⚖️ Grammes</button>
+      <button id="mode-p-btn" onclick="setCalcMode('p')" style="flex:1;padding:9px;border:none;background:transparent;color:var(--brown);font-weight:700;font-size:13px;font-family:DM Sans,sans-serif;cursor:pointer;">👥 Personnes</button>
+    </div>
+  </div>
+  <label class="form-label" id="calc-label">Quantité totale souhaitée (grammes)</label>
   <div style="display:flex;gap:10px;align-items:center">
     <div style="position:relative;flex:1">
-      <input class="form-input" type="number" id="calc-target" min="0" placeholder="Saisir le grammage…" oninput="updateCalc()" style="padding-right:36px;font-size:17px">
-      <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--gray);font-weight:600">g</span>
+      <input class="form-input" type="number" id="calc-target" min="0" placeholder="Saisir le grammage…" oninput="updateCalc()" style="padding-right:48px;font-size:17px">
+      <span id="calc-unit" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--gray);font-weight:600">g</span>
     </div>
     <div class="factor-pill" id="factor-pill" style="display:none">× 1.000</div>
   </div>
@@ -882,22 +888,59 @@ function removeIng(i){editIngs.splice(i,1);renderIngRows();updateEditTotal();}
 function updateEditTotal(){const tot=totalOf(editIngs);document.getElementById('edit-ing-title').textContent='Ingrédients — Total : '+tot.toFixed(1)+' g';document.getElementById('edit-total-bar').style.display=editIngs.length?'flex':'none';document.getElementById('edit-total-val').textContent=tot.toFixed(1)+' g';}
 async function saveRecipe(){const name=document.getElementById('edit-name').value.trim()||'Sans titre';const cat=document.getElementById('edit-cat').value.trim();const notes=document.getElementById('edit-notes').value;const idx=recipes.findIndex(x=>x.id===editId);if(idx<0)return;recipes[idx]={...recipes[idx],name,cat,notes,ings:editIngs.map(i=>({...i}))};await upsertRecipe(recipes[idx]);notify('✓ Recette sauvegardée !');renderHome();renderList();showView(editId);}
 async function delRecipe(id){const r=recipes.find(x=>x.id===id);if(!r||!confirm('Supprimer "'+r.name+'" ?'))return;recipes=recipes.filter(x=>x.id!==id);await deleteRecipeDB(id);if(currentId===id){currentId=null;renderHome();goTo('home');}renderList();renderSidebar();notify('Recette supprimée.');}
-let calcFromArchive=false;
+let calcFromArchive=false,calcMode='g';
 function calcCurrent(){if(currentId)showCalc(currentId);else goTo('list');}
+function setCalcMode(mode){
+  calcMode=mode;
+  const gBtn=document.getElementById('mode-g-btn');
+  const pBtn=document.getElementById('mode-p-btn');
+  gBtn.style.background=mode==='g'?'var(--caramel)':'transparent';
+  gBtn.style.color=mode==='g'?'#fff':'var(--brown)';
+  pBtn.style.background=mode==='p'?'var(--caramel)':'transparent';
+  pBtn.style.color=mode==='p'?'#fff':'var(--brown)';
+  document.getElementById('calc-label').textContent=mode==='g'?'Quantité totale souhaitée (grammes)':'Nombre de personnes souhaité';
+  document.getElementById('calc-unit').textContent=mode==='g'?'g':'pers.';
+  document.getElementById('calc-target').placeholder=mode==='g'?'Saisir le grammage…':'Nombre de personnes…';
+  document.getElementById('calc-target').value='';
+  document.getElementById('factor-pill').style.display='none';
+  document.getElementById('result-table').style.display='none';
+  // Mettre à jour les quick-btns
+  const archives=loadArchives();
+  const r=recipes.find(x=>x.id===calcId)||archives.find(x=>x.id===calcId);
+  if(r)renderQuickBtns(r);
+}
+function renderQuickBtns(r){
+  const tot=totalOf(r.ings);
+  if(calcMode==='p'&&r.serves){
+    const s=r.serves;
+    const multis=[0.5,1,2,5,10];
+    document.getElementById('quick-btns').innerHTML=multis.map(m=>{
+      const p=Math.round(s*m);
+      return'<button class="qbtn" onclick="setTarget('+p+')">'+p+' pers.</button>';
+    }).join('');
+  }else{
+    document.getElementById('quick-btns').innerHTML=[0.5,1,2,3,5].map(m=>'<button class="qbtn" onclick="setTarget('+(tot*m).toFixed(0)+')">'+(tot*m).toFixed(0)+' g</button>').join('');
+  }
+}
 function showCalc(id,fromArchive=false,archiveRecipe=null){
   let r=archiveRecipe||recipes.find(x=>x.id===id);
   if(!r&&fromArchive){r=loadArchives().find(x=>x.id===id);}
   if(!r)return;
   calcFromArchive=fromArchive||r.cat==='Archives';
-  calcId=id;currentId=id;
+  calcId=id;currentId=id;calcMode='g';
   const tot=totalOf(r.ings);
   document.getElementById('calc-name').textContent=r.name;
   document.getElementById('calc-meta').innerHTML=(calcFromArchive?'<span style="color:var(--brown);font-weight:700">🗂️ Archive</span> · ':'')+'Base : <strong>'+tot.toFixed(1)+' g</strong>'+(r.serves?' pour <strong>'+r.serves+' pers.</strong>':'')+' — '+r.ings.length+' ingrédient'+(r.ings.length!==1?'s':'');
+  // Afficher le toggle seulement si la recette a serves
+  const toggle=document.getElementById('calc-mode-toggle');
+  toggle.style.display=(calcFromArchive&&r.serves)?'block':'none';
+  // Reset mode grammes
+  setCalcMode('g');
   document.getElementById('calc-target').value='';
   document.getElementById('factor-pill').style.display='none';
   document.getElementById('result-table').style.display='none';
   document.getElementById('result-head-3').textContent='Calculé';
-  document.getElementById('quick-btns').innerHTML=[0.5,1,2,3,5].map(m=>'<button class="qbtn" onclick="setTarget('+(tot*m).toFixed(0)+')">'+(tot*m).toFixed(0)+' g</button>').join('');
+  renderQuickBtns(r);
   document.getElementById('tot-base').textContent=tot.toFixed(1)+' g';
   document.getElementById('tot-result').textContent='—';
   renderResultRows(r,null);
@@ -908,13 +951,26 @@ function updateCalc(){
   const archives=loadArchives();
   const r=recipes.find(x=>x.id===calcId)||archives.find(x=>x.id===calcId);
   if(!r)return;
-  const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),valid=cible>0&&tot>0,factor=valid?cible/tot:null,pill=document.getElementById('factor-pill');
+  const tot=totalOf(r.ings);
+  const val=parseFloat(document.getElementById('calc-target').value);
+  let factor=null,label='',cibleG=null;
+  if(calcMode==='p'&&r.serves&&val>0&&tot>0){
+    factor=val/r.serves;
+    cibleG=tot*factor;
+    label='Pour '+val+' pers.';
+  }else if(calcMode==='g'&&val>0&&tot>0){
+    factor=val/tot;
+    cibleG=val;
+    label='Pour '+val.toFixed(0)+' g';
+  }
+  const valid=factor!==null;
+  const pill=document.getElementById('factor-pill');
   pill.style.display=valid?'':'none';if(valid)pill.textContent='× '+factor.toFixed(4);
   document.getElementById('result-table').style.display='';
-  document.getElementById('result-head-3').textContent=valid?'Pour '+cible.toFixed(0)+' g':'Calculé';
-  document.getElementById('tot-result').textContent=valid?cible.toFixed(1)+' g':'—';
+  document.getElementById('result-head-3').textContent=valid?label:'Calculé';
+  document.getElementById('tot-result').textContent=valid?cibleG.toFixed(1)+' g':'—';
   document.getElementById('tot-result').className=valid?'c3 hi':'c3';
-  document.querySelectorAll('.qbtn').forEach(b=>b.classList.toggle('on',valid&&Math.abs(parseFloat(b.textContent)-cible)<0.5));
+  document.querySelectorAll('.qbtn').forEach(b=>b.classList.toggle('on',valid&&Math.abs(parseFloat(b.textContent)-val)<0.5));
   renderResultRows(r,factor);
 }
 function renderResultRows(r,factor){document.getElementById('result-rows').innerHTML=r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor!==null?base*factor:null;return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="c2">'+base.toFixed(1)+'</span><span class="'+(calc!==null?'c3 hi':'c3')+'">'+(calc!==null?calc.toFixed(1)+' g':'—')+'</span></div>';}).join('');}
