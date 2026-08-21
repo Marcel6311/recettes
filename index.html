@@ -256,7 +256,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
     <div class="sb-count" id="sb-count">0 recette</div>
     <div class="sb-search">
       <span class="sb-search-icon">🔍</span>
-      <input type="search" id="sb-search" placeholder="Rechercher…" oninput="renderSidebar()" autocomplete="off">
+      <input type="search" id="sb-search" placeholder="Rechercher…" oninput="renderSidebar()" onsearch="renderSidebar()" autocomplete="off">
     </div>
   </div>
   <button id="sb-new-btn" onclick="newRecipe();closeSidebar()">＋ Nouvelle recette</button>
@@ -289,7 +289,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 </div>
 <div class="page" id="page-list">
   <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-    <div class="search-wrap" style="flex:1;margin-bottom:0"><span class="search-icon">🔍</span><input type="search" id="search-input" placeholder="Rechercher une recette…" oninput="onSearch()" autocomplete="off"></div>
+    <div class="search-wrap" style="flex:1;margin-bottom:0"><span class="search-icon">🔍</span><input type="search" id="search-input" placeholder="Rechercher une recette…" oninput="onSearch()" onsearch="onSearch()" autocomplete="off"></div>
     <button id="sort-btn" onclick="toggleSort()" style="background:var(--parchment);border:1.5px solid var(--wheat);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;color:var(--brown);cursor:pointer;white-space:nowrap;flex-shrink:0;">A→Z</button>
   </div>
   <div id="filter-bar-wrap"></div>
@@ -348,7 +348,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 <div class="page" id="page-search">
   <div style="position:relative;margin-bottom:10px">
     <span class="search-icon">🔍</span>
-    <input class="form-input" type="search" id="big-search" placeholder="Rechercher une recette ou ingrédient…" oninput="renderBigSearch()" autocomplete="off" autocorrect="off" spellcheck="false" style="padding-left:36px;font-size:16px;border-radius:12px;">
+    <input class="form-input" type="search" id="big-search" placeholder="Rechercher une recette ou ingrédient…" oninput="renderBigSearch()" onsearch="renderBigSearch()" autocomplete="off" autocorrect="off" spellcheck="false" style="padding-left:36px;font-size:16px;border-radius:12px;">
   </div>
   <div id="big-search-results" style="border:1.5px solid var(--wheat);border-radius:12px;overflow:hidden;background:#fff;">
     <div class="empty" style="padding:30px;color:var(--gray)">Tapez pour rechercher…</div>
@@ -358,7 +358,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 <div class="page" id="page-manage">
   <div style="position:relative;margin-bottom:12px">
     <span class="search-icon">🔍</span>
-    <input class="form-input" type="search" id="manage-search" placeholder="Filtrer les ingrédients…" oninput="renderManage()" autocomplete="off" style="padding-left:36px;">
+    <input class="form-input" type="search" id="manage-search" placeholder="Filtrer les ingrédients…" oninput="renderManage()" onsearch="renderManage()" autocomplete="off" style="padding-left:36px;">
   </div>
   <div id="manage-list" style="border:1px solid var(--wheat);border-radius:12px;overflow:hidden;"></div>
 </div>
@@ -372,7 +372,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
     <div class="search-wrap" style="flex:1;margin-bottom:0">
       <span class="search-icon">🔍</span>
-      <input type="search" id="arch-search" placeholder="Rechercher dans les archives…" oninput="renderArchives()" autocomplete="off">
+      <input type="search" id="arch-search" placeholder="Rechercher dans les archives…" oninput="renderArchives()" onsearch="renderArchives()" autocomplete="off">
     </div>
     <button onclick="exportArchivesJSON()" style="background:var(--brown);border:none;border-radius:10px;padding:10px 13px;color:var(--wheat);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">💾 Exporter</button>
   </div>
@@ -423,7 +423,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
     <div class="search-wrap" style="flex:1;margin-bottom:0">
       <span class="search-icon">🔍</span>
-      <input type="search" id="couts-search" placeholder="Recette ou numéro…" oninput="renderCouts()" autocomplete="off">
+      <input type="search" id="couts-search" placeholder="Recette ou numéro…" oninput="renderCouts()" onsearch="renderCouts()" autocomplete="off">
     </div>
     <select id="couts-groupe" onchange="renderCouts()" style="padding:9px 10px;border:1.5px solid var(--wheat);border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--brown);background:var(--parchment);cursor:pointer;max-width:130px;outline:none;">
       <option value="">Tous les groupes</option>
@@ -436,7 +436,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 <div class="page" id="page-sf-index">
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
-    <input type="search" id="sf-search" placeholder="Semi-fabriqué ou recette…" oninput="renderSfIndex()" autocomplete="off">
+    <input type="search" id="sf-search" placeholder="Semi-fabriqué ou recette…" oninput="renderSfIndex()" onsearch="renderSfIndex()" autocomplete="off">
   </div>
   <div id="sf-content"></div>
 </div>
@@ -445,7 +445,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 <div class="page" id="page-mp">
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
-    <input type="search" id="mp-search" placeholder="Matière première ou recette…" oninput="renderMp()" autocomplete="off">
+    <input type="search" id="mp-search" placeholder="Matière première ou recette…" oninput="renderMp()" onsearch="renderMp()" autocomplete="off">
   </div>
   <div class="mp-tbl" id="mp-content"></div>
 </div>
