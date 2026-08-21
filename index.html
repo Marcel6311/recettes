@@ -1379,7 +1379,7 @@ function showRview(r){
     techHtml='<div class="rv-section"><div class="rv-section-title">Technique</div><div class="rv-tech">'+esc(r.tech)+'</div></div>';
   }
   document.getElementById('rview-content').innerHTML=
-    '<div style="padding:12px 0 6px"><div class="rv-back" onclick="history.back?history.back():goTo('classeur')">← Retour</div></div>'
+    '<div style="padding:12px 0 6px"><div class="rv-back" onclick="goTo(\'classeur\')">← Retour</div></div>'
     +'<div class="rv-header">'
     +'<div class="rv-no">N° '+esc(String(r.no))+'  ·  '+esc(r.groupe||'')+'</div>'
     +'<div class="rv-nom">'+esc(r.nom)+'</div>'
