@@ -111,14 +111,14 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .total-bar-val { color:var(--caramel); font-weight:800; font-size:20px; }
 .badge { display:inline-block; background:var(--wheat); color:var(--brown); border-radius:99px; padding:3px 12px; font-size:12px; font-weight:600; margin-bottom:14px; }
 .ing-table { border:1px solid var(--wheat); border-radius:12px; overflow:hidden; }
-.ing-tr { display:flex; justify-content:space-between; align-items:center; padding:11px 16px; border-bottom:1px solid var(--wheat); font-size:14px; }
+.ing-tr { display:grid; grid-template-columns:1fr auto auto; align-items:center; padding:11px 16px; border-bottom:1px solid var(--wheat); font-size:14px; gap:0 8px; }
 .ing-tr:nth-child(odd) { background:var(--parchment); }
 .ing-tr:nth-child(even) { background:var(--cream); }
 .ing-tr.tot { background:var(--dark); border-bottom:none; }
 .ing-tr.tot .ing-n { color:var(--wheat); font-weight:700; }
 .ing-tr.tot .ing-q { color:var(--caramel); font-weight:800; font-size:16px; }
-.ing-q { font-weight:700; color:var(--brown); }
-.ing-u { font-size:12px; color:var(--gray); margin-left:4px; font-weight:500; min-width:28px; }
+.ing-q { font-weight:700; color:var(--brown); text-align:right; }
+.ing-u { font-size:12px; color:var(--gray); margin-left:4px; font-weight:500; min-width:28px; text-align:left; }
 .unit-input { width:60px!important; flex-shrink:0; font-size:13px; padding:8px 6px!important; text-align:center; }
 .notes-box { background:var(--parchment); border:1px solid var(--wheat); border-radius:12px; padding:14px; font-size:14px; line-height:1.75; white-space:pre-wrap; }
 .calc-card { background:var(--parchment); border:1px solid var(--wheat); border-radius:14px; padding:15px 18px; margin-bottom:20px; }
