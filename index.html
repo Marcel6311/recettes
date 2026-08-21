@@ -150,6 +150,8 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
   body > *:not(#print-zone) { display:none !important; }
   #print-zone { display:block !important; padding:0; font-family:'DM Sans',sans-serif; }
+  #pz-tech { white-space:pre-wrap; font-size:12px; line-height:1.7; color:#3E2010; margin-top:14px; padding-top:12px; border-top:1px solid #C49A3C; }
+  #pz-tech-title { font-family:'Playfair Display',serif; font-size:14px; font-weight:700; color:#7B4F2E; margin-bottom:6px; }
   .p-title { font-family:'Playfair Display',serif; font-size:26px; color:#3E2010; margin-bottom:4px; }
   .p-sub { color:#9A8C7A; font-size:13px; margin-bottom:3px; }
   .p-date { color:#9A8C7A; font-size:11px; padding-bottom:14px; border-bottom:2px solid #C49A3C; margin-bottom:18px; }
@@ -582,7 +584,7 @@ async function migrateFromSupabase(){
 const PAGES=['home','list','view','edit','calc','search','manage','archives'];
 const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur',search:'🔍 Recherche',manage:'⚙️ Gérer les ingrédients',archives:'🗂️ Archives historiques'};
 function goTo(name){PAGES.forEach(p=>{document.getElementById('page-'+p).classList.toggle('active',p===name);const bn=document.getElementById('bn-'+p);if(bn)bn.classList.toggle('on',p===name);});document.getElementById('topbar-title').textContent=PAGE_TITLES[name]||PAGE_TITLES.home;renderTopbarActions(name);window.scrollTo(0,0);}
-function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:4px" title="Exporter">💾</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:4px" title="Nouvelle recette">＋</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()" style="margin-right:4px" title="Importer">📂</button><button class="tb-btn" onclick="goTo(\'manage\');renderManage()" style="margin-right:4px" title="Gérer ingrédients">⚙️</button><button class="tb-btn" onclick="openSidebar()" title="Index">☰</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId){const isArch=!!loadArchives().find(x=>x.id===currentId);if(isArch){el.innerHTML='<button class="tb-btn" onclick="editArchive(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalcArchive(currentId)">🧮 Calculer</button>';}else{el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';}}if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId)el.innerHTML='<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';}
+function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:4px" title="Exporter">💾</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:4px" title="Nouvelle recette">＋</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()" style="margin-right:4px" title="Importer">📂</button><button class="tb-btn" onclick="goTo(\'manage\');renderManage()" style="margin-right:4px" title="Gérer ingrédients">⚙️</button><button class="tb-btn" onclick="openSidebar()" title="Index">☰</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId){const isArch=!!loadArchives().find(x=>x.id===currentId);if(isArch){el.innerHTML='<button class="tb-btn" onclick="editArchive(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalcArchive(currentId)">🧮 Calculer</button>';}else{el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';}}if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId)el.innerHTML='<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';if(page==='rview'&&currentRview)el.innerHTML='<button class="tb-btn" onclick="toggleRviewCalc()" style="margin-right:4px">🧮 Calculer</button><button class="tb-btn green-btn" onclick="printRviewRecipe()">🖨️ Imprimer</button>';}
 function exportJSON(){
   const data=JSON.stringify(recipes,null,2);
   const blob=new Blob([data],{type:'application/json'});
@@ -1398,7 +1400,7 @@ PAGE_TITLES['classeur']='📚 Classeur';
 PAGE_TITLES['couts']='💰 Tableau des coûts';
 PAGE_TITLES['sf-index']='🔗 Index semi-fabriqués';
 PAGE_TITLES['mp']='🧂 Matières premières';
-PAGE_TITLES['rview']='';
+PAGE_TITLES['rview']='';let currentRview=null;
 PAGE_TITLES['fiches']='📄 Fiches Richemont';
 PAGE_TITLES['fiche-view']='';
 
@@ -1427,7 +1429,7 @@ function openByNom(nom){
   notify('Recette « '+nom+' » introuvable.');
 }
 
-function showRview(r){
+function showRview(r){currentRview=r;
   PAGE_TITLES['rview']='📄 '+r.nom;
   const ings=r.ings||[];
   const rdt=r.rdt||{};
@@ -1455,21 +1457,121 @@ function showRview(r){
       if(qings.length){
         const tot=qings.reduce((s,i)=>s+(i.q||0),0);
         return '<div class="rv-section"><div class="rv-section-title">Ingrédients ('+qings.length+') — '+(tot?tot+'g total':'')+'</div>'
-          +'<div class="rv-ing-tbl">'+qings.map(function(i){
+          +'<div id="rview-ing-tbl" class="rv-ing-tbl">'+qings.map(function(i){
             const hasQ=(i.q!=null&&i.q!==undefined);
             const pct=(hasQ&&tot)?Math.round(i.q/tot*100):0;
-            return '<div class="rv-ing-row">'
+            return '<div class="rv-ing-row" data-base="'+(hasQ?i.q:'')+'">'
               +'<span class="rv-ing-q" style="'+(hasQ?'':'color:var(--gray)')+'">'+(hasQ?i.q+'g':'—')+'</span>'
               +'<span class="rv-ing-n">'+esc(i.n)+'</span>'
               +'<span class="rv-ing-pct">'+(pct?pct+'%':'')+'</span>'
               +'</div>';
-          }).join('')+'</div></div>';
+          }).join('')
+          +'</div>'
+          +'<div id="rview-calc-panel" style="display:none;margin-top:12px;background:var(--parchment);border:1.5px solid var(--caramel);border-radius:12px;padding:14px 16px;">'
+          +'<div style="font-size:12px;font-weight:700;color:var(--brown);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Calculateur de proportions</div>'
+          +'<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">'
+          +'<button onclick="applyRviewFactor(0.5)" style="background:var(--wheat);border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--brown);cursor:pointer;">×½</button>'
+          +'<button onclick="applyRviewFactor(1)" style="background:var(--wheat);border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--brown);cursor:pointer;">×1</button>'
+          +'<button onclick="applyRviewFactor(2)" style="background:var(--wheat);border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--brown);cursor:pointer;">×2</button>'
+          +'<button onclick="applyRviewFactor(3)" style="background:var(--wheat);border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--brown);cursor:pointer;">×3</button>'
+          +'</div>'
+          +'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">'
+          +'<div style="flex:1;min-width:140px"><label style="font-size:11px;color:var(--gray);font-weight:700;display:block;margin-bottom:4px;">POIDS CIBLE (g)</label>'
+          +'<input type="number" id="rview-target" min="0" placeholder="ex: 2500" oninput="applyRviewTarget()" style="width:100%;padding:9px 11px;background:#fff;border:1.5px solid var(--wheat);border-radius:8px;font-size:15px;font-family:DM Sans,sans-serif;outline:none;">'
+          +'</div>'
+          +'<div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--gray);font-weight:700;display:block;margin-bottom:4px;">MULTIPLICATEUR</label>'
+          +'<input type="number" id="rview-factor" min="0" step="0.1" placeholder="ex: 1.5" oninput="applyRviewMult()" style="width:100%;padding:9px 11px;background:#fff;border:1.5px solid var(--wheat);border-radius:8px;font-size:15px;font-family:DM Sans,sans-serif;outline:none;">'
+          +'</div>'
+          +'</div>'
+          +'<div id="rview-calc-total" style="margin-top:10px;font-size:13px;font-weight:700;color:var(--caramel);"></div>'
+          +'</div></div>';
       }
       return sings.length?'<div class="rv-section"><div class="rv-section-title">Ingrédients ('+sings.length+')</div><ul class="rv-ing-list">'+sings.map(function(i){return '<li class="rv-ing-pill">'+esc(i)+'</li>';}).join('')+'</ul></div>':'';
     }())
     +rdtHtml
     +techHtml;
-  goTo('rview');
+  goTo('rview');renderTopbarActions('rview');
+}
+
+
+function toggleRviewCalc(){
+  const p=document.getElementById('rview-calc-panel');
+  if(!p)return;
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+function applyRviewFactor(f){
+  document.getElementById('rview-factor').value=f;
+  document.getElementById('rview-target').value='';
+  _updateRviewRows(f);
+}
+function applyRviewTarget(){
+  const t=parseFloat(document.getElementById('rview-target').value);
+  if(!currentRview||!t)return;
+  const tot=(currentRview.ings_qty||[]).reduce((s,i)=>s+(i.q||0),0);
+  if(!tot)return;
+  const f=t/tot;
+  document.getElementById('rview-factor').value=f.toFixed(3);
+  _updateRviewRows(f);
+}
+function applyRviewMult(){
+  const f=parseFloat(document.getElementById('rview-factor').value);
+  if(isNaN(f))return;
+  document.getElementById('rview-target').value='';
+  _updateRviewRows(f);
+}
+function _updateRviewRows(f){
+  const rows=document.querySelectorAll('#rview-ing-tbl .rv-ing-row');
+  let tot=0;
+  rows.forEach(row=>{
+    const base=parseFloat(row.getAttribute('data-base'));
+    const qEl=row.querySelector('.rv-ing-q');
+    if(!isNaN(base)&&qEl){
+      const v=base*f;
+      tot+=v;
+      qEl.textContent=v%1===0?v+'g':v.toFixed(1)+'g';
+      qEl.style.color=f!==1?'var(--caramel)':'';
+    }
+  });
+  const totEl=document.getElementById('rview-calc-total');
+  if(totEl) totEl.textContent='Total calculé : '+tot.toFixed(0)+' g'+' (×'+f.toFixed(f%1===0?0:2)+')';
+}
+function printRviewRecipe(){
+  if(!currentRview)return;
+  const r=currentRview;
+  const f=parseFloat(document.getElementById('rview-factor')&&document.getElementById('rview-factor').value)||1;
+  const qings=r.ings_qty||[];
+  const tot=qings.reduce((s,i)=>s+(i.q||0),0);
+  const now=new Date();
+  document.getElementById('pz-name').textContent=r.nom;
+  const sub=[];
+  sub.push('N° '+r.no);
+  if(r.groupe) sub.push(r.groupe);
+  if(tot) sub.push('Base : '+tot+'g');
+  if(f&&f!==1) sub.push('→ ×'+f.toFixed(2)+' = '+(tot*f).toFixed(0)+'g');
+  document.getElementById('pz-sub').textContent=sub.join(' · ');
+  document.getElementById('pz-date').textContent='Imprimé le '+now.toLocaleDateString('fr-CH',{day:'2-digit',month:'long',year:'numeric'})+' à '+now.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'});
+  if(qings.length){
+    document.getElementById('pz-table').innerHTML='<div class="result-table"><div class="result-head"><span>Ingrédient</span><span>Base</span><span>'+(f&&f!==1?'×'+f.toFixed(2):'Quantité')+'</span></div>'
+      +qings.map(i=>{
+        const base=i.q||0;
+        const calc=base*f;
+        return '<div class="result-row"><span class="c1">'+esc(i.n)+'</span><span class="c2">'+base+'g</span><span class="c3 hi">'+(f!==1?calc.toFixed(0):base)+'g</span></div>';
+      }).join('')
+      +'<div class="result-row tot-row"><span class="c1">TOTAL</span><span class="c2">'+tot+'g</span><span class="c3">'+(f!==1?(tot*f).toFixed(0):tot)+'g</span></div></div>';
+  } else {
+    document.getElementById('pz-table').innerHTML='';
+  }
+  const notesEl=document.getElementById('pz-notes');
+  notesEl.innerHTML='';
+  let techDiv=document.getElementById('pz-tech');
+  if(!techDiv){techDiv=document.createElement('div');techDiv.id='pz-tech';document.getElementById('print-zone').appendChild(techDiv);}
+  if(r.tech&&r.tech.trim()){
+    techDiv.innerHTML='<div id="pz-tech-title">Technique de fabrication</div>'+esc(r.tech);
+  } else {techDiv.innerHTML='';}
+  const old=document.title;
+  document.title=r.nom+(f&&f!==1?' — ×'+f.toFixed(2):'');
+  window.print();
+  document.title=old;
 }
 
 // ─── Fiches Richemont ────────────────────────────────────────────────────────
