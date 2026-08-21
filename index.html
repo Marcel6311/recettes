@@ -1014,7 +1014,7 @@ function showArchiveView(id){
   if(!r)return;
   currentId=id;
   const catBadge=document.getElementById('view-cat-badge');
-  catBadge.innerHTML='<span class="badge" style="background:var(--brown);color:var(--wheat);">🗂️ Archive historique</span>'+(r.serves?'<span class="badge" style="margin-left:6px">'+r.serves+' personnes</span>':'');
+  catBadge.innerHTML='<span class="badge" style="background:var(--brown);color:var(--wheat);">🗂️ Archive historique</span><span class="badge" style="margin-left:6px;font-family:monospace;letter-spacing:.03em;">'+r.id.toUpperCase()+'</span>'+(r.serves?'<span class="badge" style="margin-left:6px">'+r.serves+' personnes</span>':'');
   const ingSection=document.getElementById('view-ing-section');
   if(r.ings&&r.ings.length){
     const tot=totalOf(r.ings);
