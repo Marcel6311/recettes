@@ -1453,12 +1453,26 @@ function showRview(r){
       const qings=r.ings_qty||[];
       const sings=r.ings||[];
       if(qings.length){
-        const tot=qings.reduce((s,i)=>s+i.q,0);
-        return '<div class="rv-section"><div class="rv-section-title">Ingrédients ('+qings.length+') — '+tot+'g total</div>'
+        // Ingrédients avec quantités
+        const tot=qings.reduce((s,i)=>s+(i.q||0),0);
+        const qNames=qings.map(function(i){return (i.n||'').toLowerCase();});
+        // Ingrédients du champ "ings" absents de ings_qty (noms non présents)
+        const extras=sings.filter(function(n){
+          const nl=(n||'').toLowerCase();
+          return !qNames.some(function(qn){return qn.includes(nl.substring(0,8))||nl.includes(qn.substring(0,8));});
+        });
+        let html='<div class="rv-section"><div class="rv-section-title">Ingrédients ('+(qings.length+extras.length)+') — '+(tot?tot+'g total':'')+'</div>'
           +'<div class="rv-ing-tbl">'+qings.map(function(i){
-            const pct=Math.round(i.q/tot*100);
-            return '<div class="rv-ing-row"><span class="rv-ing-q">'+i.q+'g</span><span class="rv-ing-n">'+esc(i.n)+'</span><span class="rv-ing-pct">'+pct+'%</span></div>';
-          }).join('')+'</div></div>';
+            const pct=tot&&i.q?Math.round(i.q/tot*100):0;
+            return '<div class="rv-ing-row"><span class="rv-ing-q">'+(i.q?i.q+'g':'—')+'</span><span class="rv-ing-n">'+esc(i.n)+'</span><span class="rv-ing-pct">'+(pct?pct+'%':'')+'</span></div>';
+          }).join('');
+        if(extras.length){
+          html+=extras.map(function(n){
+            return '<div class="rv-ing-row"><span class="rv-ing-q" style="color:var(--gray)">—</span><span class="rv-ing-n">'+esc(n)+'</span><span class="rv-ing-pct"></span></div>';
+          }).join('');
+        }
+        html+='</div></div>';
+        return html;
       }
       return sings.length?'<div class="rv-section"><div class="rv-section-title">Ingrédients ('+sings.length+')</div><ul class="rv-ing-list">'+sings.map(function(i){return '<li class="rv-ing-pill">'+esc(i)+'</li>';}).join('')+'</ul></div>':'';
     }())
