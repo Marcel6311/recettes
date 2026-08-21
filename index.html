@@ -176,6 +176,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .cost-row{display:grid;grid-template-columns:36px 1fr 60px 90px;gap:4px 8px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--wheat);font-size:13px;}
 .cost-row:nth-child(odd){background:var(--parchment);}
 .cost-row:nth-child(even){background:var(--cream);}
+.cost-row:hover{background:var(--wheat)!important;}
 .cost-no{font-family:monospace;font-size:11px;color:var(--gray);}
 .cost-nom{font-weight:600;color:var(--dark);}
 .cost-grp{font-size:11px;color:var(--gray);margin-top:1px;}
@@ -192,6 +193,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .sf-body.open{display:block;}
 .sf-r-row{padding:7px 0;border-bottom:1px solid var(--wheat);font-size:13px;display:flex;align-items:center;gap:8px;}
 .sf-r-row:last-child{border-bottom:none;}
+.sf-r-row:hover{background:var(--wheat);}
 .sf-r-no{font-family:monospace;font-size:11px;color:var(--gray);min-width:36px;}
 .sf-r-nom{color:var(--dark);flex:1;}
 .sf-r-grp{font-size:11px;color:var(--caramel);}
@@ -209,6 +211,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .mp-detail.open{display:block;}
 .mp-d-row{padding:5px 0;border-bottom:1px solid var(--wheat);font-size:12px;display:flex;gap:7px;align-items:center;}
 .mp-d-row:last-child{border-bottom:none;}
+.mp-d-row:hover{background:var(--wheat);}
 .mp-type-r{background:var(--caramel);color:#fff;border-radius:3px;padding:0 5px;font-size:10px;font-weight:700;flex-shrink:0;}
 .mp-type-sf{background:var(--brown);color:var(--wheat);border-radius:3px;padding:0 5px;font-size:10px;font-weight:700;flex-shrink:0;}
 </style>
@@ -1318,6 +1321,17 @@ PAGE_TITLES['mp']='🧂 Matières premières';
   });
 })();
 
+// ─── Ouvrir une recette depuis le Classeur ────────────────────────────────────
+function openByNom(nom){
+  if(!nom)return;
+  const n=nom.toLowerCase().trim();
+  const r=recipes.find(x=>(x.name||'').toLowerCase().trim()===n)
+         ||recipes.find(x=>(x.name||'').toLowerCase().includes(n))
+         ||recipes.find(x=>n.includes((x.name||'').toLowerCase().trim()));
+  if(r){showView(r.id);}
+  else{notify('Recette « '+nom+' » introuvable dans votre cahier.');}
+}
+
 // ─── Tableau des coûts ───────────────────────────────────────────────────────
 function renderCouts(){
   const q=(document.getElementById('couts-search').value||'').toLowerCase();
@@ -1331,7 +1345,8 @@ function renderCouts(){
   items.forEach(r=>{
     const pieces=r.nb_pieces?r.nb_pieces+'×':'—';
     const poids=r.poids_piece_g?' <small style="color:var(--gray)">'+r.poids_piece_g+'g</small>':'';
-    html+='<div class="cost-row"><span class="cost-no">'+esc(r.no)+'</span>'
+    html+='<div class="cost-row" style="cursor:pointer" onclick="openByNom(\''+r.nom.replace(/'/g,"\\'")+'\')">'
+      +'<span class="cost-no">'+esc(r.no)+'</span>'
       +'<div><div class="cost-nom">'+esc(r.nom)+'</div>'
       +(r.date?'<div class="cost-grp">'+esc(r.date)+'</div>':'')+'</div>'
       +'<div class="cost-pieces">'+esc(pieces)+poids+'</div>'
@@ -1367,7 +1382,8 @@ function renderSfIndex(){
       +'<span class="sf-n-badge">'+sf.nb_recettes+'</span>';
     const body=document.createElement('div');body.className='sf-body'+(isOpen?' open':'');
     body.innerHTML=(sf.recettes||[]).map(r=>
-      '<div class="sf-r-row"><span class="sf-r-no">'+esc(r.no)+'</span>'
+      '<div class="sf-r-row" style="cursor:pointer" onclick="openByNom(\''+r.nom.replace(/'/g,"\\'")+'\')">'
+      +'<span class="sf-r-no">'+esc(r.no)+'</span>'
       +'<span class="sf-r-nom">'+esc(r.nom)+'</span>'
       +'<span class="sf-r-grp">'+esc(r.groupe)+'</span></div>'
     ).join('');
@@ -1402,7 +1418,8 @@ function renderMp(){
       +'<span class="mp-count">'+mp.nb_usages+'</span>';
     const detail=document.createElement('div');detail.className='mp-detail'+(isOpen?' open':'');
     detail.innerHTML=(mp.usages||[]).map(u=>
-      '<div class="mp-d-row"><span class="mp-type-'+(u.type==='R'?'r':'sf')+'">'+esc(u.type==='R'?'R':'SF')+'</span>'
+      '<div class="mp-d-row" style="cursor:pointer" onclick="openByNom(\''+((u.nom||'').replace(/'/g,"\\'"))+'\')">'
+      +'<span class="mp-type-'+(u.type==='R'?'r':'sf')+'">'+esc(u.type==='R'?'R':'SF')+'</span>'
       +'<span style="flex:1;color:var(--dark)">'+esc(u.nom||'—')+'</span>'
       +'<span style="color:var(--gray);font-size:11px">'+esc(u.no)+'</span></div>'
     ).join('');
