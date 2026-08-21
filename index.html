@@ -1548,6 +1548,40 @@ function renderMp(){
 }
 
 init();
+
+// Boutons ✕ personnalisés pour tous les champs de recherche (fiables sur Safari)
+(function(){
+  function addClearBtn(inp){
+    var parent=inp.parentElement;
+    // S'assurer que le parent est en position relative
+    var cs=window.getComputedStyle(parent);
+    if(cs.position==='static') parent.style.position='relative';
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.setAttribute('aria-label','Effacer');
+    btn.style.cssText='position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:17px;line-height:1;color:#aaa;cursor:pointer;padding:0 3px;display:none;z-index:5;';
+    btn.innerHTML='&#x2715;';
+    parent.appendChild(btn);
+    function sync(){btn.style.display=inp.value?'block':'none';}
+    inp.addEventListener('input',sync);
+    inp.addEventListener('search',sync);
+    btn.addEventListener('mousedown',function(e){e.preventDefault();});
+    btn.addEventListener('click',function(){
+      inp.value='';
+      inp.dispatchEvent(new Event('input',{bubbles:true}));
+      inp.dispatchEvent(new Event('search',{bubbles:true}));
+      inp.focus();
+      btn.style.display='none';
+    });
+    sync();
+    // Masquer le X natif du navigateur pour éviter la double croix
+    var style=document.createElement('style');
+    style.textContent='#'+inp.id+'::-webkit-search-cancel-button{display:none;}';
+    document.head.appendChild(style);
+  }
+  // Appliquer à tous les champs de recherche présents et futurs
+  document.querySelectorAll('input[type="search"]').forEach(addClearBtn);
+})();
 </script>
 </body>
 </html>
