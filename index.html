@@ -118,6 +118,8 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .ing-tr.tot .ing-n { color:var(--wheat); font-weight:700; }
 .ing-tr.tot .ing-q { color:var(--caramel); font-weight:800; font-size:16px; }
 .ing-q { font-weight:700; color:var(--brown); }
+.ing-u { font-size:12px; color:var(--gray); margin-left:4px; font-weight:500; min-width:28px; }
+.unit-input { width:60px!important; flex-shrink:0; font-size:13px; padding:8px 6px!important; text-align:center; }
 .notes-box { background:var(--parchment); border:1px solid var(--wheat); border-radius:12px; padding:14px; font-size:14px; line-height:1.75; white-space:pre-wrap; }
 .calc-card { background:var(--parchment); border:1px solid var(--wheat); border-radius:14px; padding:15px 18px; margin-bottom:20px; }
 .calc-card-name { font-family:'Playfair Display',serif; font-size:19px; font-weight:700; color:var(--dark); }
@@ -811,7 +813,7 @@ function showView(id){
   document.getElementById('view-cat-badge').innerHTML=r.cat?'<div class="badge">'+esc(r.cat)+'</div>':'';
   let ih='<div class="section-title">Ingrédients — '+r.ings.length+' · Total : '+tot.toFixed(1)+' g</div>';
   if(!r.ings.length)ih+='<div class="empty">Aucun ingrédient.</div>';
-  else ih+='<div class="ing-table">'+r.ings.map(i=>'<div class="ing-tr"><span class="ing-n">'+(esc(i.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="ing-q">'+(parseFloat(i.q)||0).toFixed(1)+' g</span></div>').join('')+'<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">'+tot.toFixed(1)+' g</span></div></div>';
+  else ih+='<div class="ing-table">'+r.ings.map(i=>'<div class="ing-tr"><span class="ing-n">'+(esc(i.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="ing-q">'+(parseFloat(i.q)||0).toFixed(1)+'</span><span class="ing-u">'+(i.u?esc(i.u):'g')+'</span></div>').join('')+'<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">'+tot.toFixed(1)+' g</span></div></div>';
   document.getElementById('view-ing-section').innerHTML=ih;
   document.getElementById('view-notes-section').innerHTML=r.notes?'<div class="section-title" style="margin-top:20px">Notes</div><div class="notes-box">'+esc(r.notes)+'</div>':'';
   // Boutons précédent / suivant
@@ -869,12 +871,20 @@ function renderIngRows(){
     qWrap.appendChild(qInput);
     qWrap.appendChild(qUnit);
 
+    const uInput=document.createElement('input');
+    uInput.className='form-input unit-input';
+    uInput.type='text';
+    uInput.value=ing.u||'';
+    uInput.placeholder='unité';
+    uInput.addEventListener('input',()=>{editIngs[i].u=uInput.value;});
+
     const delBtn=document.createElement('button');
     delBtn.className='del-btn';
     delBtn.textContent='✕';
 
     wrap.appendChild(nameBtn);
     wrap.appendChild(qWrap);
+    wrap.appendChild(uInput);
     wrap.appendChild(delBtn);
     container.appendChild(wrap);
 
@@ -884,7 +894,7 @@ function renderIngRows(){
   });
 }
 
-function addIng(){editIngs.push({id:uid(),n:'',q:''});renderIngRows();updateEditTotal();setTimeout(()=>{const inputs=document.querySelectorAll('#ing-editor-rows input[type=text]');if(inputs.length)inputs[inputs.length-1].focus();},30);}
+function addIng(){editIngs.push({id:uid(),n:'',q:'',u:''});renderIngRows();updateEditTotal();setTimeout(()=>{const inputs=document.querySelectorAll('#ing-editor-rows input[type=text]');if(inputs.length)inputs[inputs.length-1].focus();},30);}
 function removeIng(i){editIngs.splice(i,1);renderIngRows();updateEditTotal();}
 function updateEditTotal(){const tot=totalOf(editIngs);document.getElementById('edit-ing-title').textContent='Ingrédients — Total : '+tot.toFixed(1)+' g';document.getElementById('edit-total-bar').style.display=editIngs.length?'flex':'none';document.getElementById('edit-total-val').textContent=tot.toFixed(1)+' g';}
 async function saveRecipe(){const name=document.getElementById('edit-name').value.trim()||'Sans titre';const cat=document.getElementById('edit-cat').value.trim();const notes=document.getElementById('edit-notes').value;const idx=recipes.findIndex(x=>x.id===editId);if(idx<0)return;recipes[idx]={...recipes[idx],name,cat,notes,ings:editIngs.map(i=>({...i}))};await upsertRecipe(recipes[idx]);notify('✓ Recette sauvegardée !');renderHome();renderList();showView(editId);}
@@ -974,8 +984,8 @@ function updateCalc(){
   document.querySelectorAll('.qbtn').forEach(b=>b.classList.toggle('on',valid&&Math.abs(parseFloat(b.textContent)-val)<0.5));
   renderResultRows(r,factor);
 }
-function renderResultRows(r,factor){document.getElementById('result-rows').innerHTML=r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor!==null?base*factor:null;return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="c2">'+base.toFixed(1)+'</span><span class="'+(calc!==null?'c3 hi':'c3')+'">'+(calc!==null?calc.toFixed(1)+' g':'—')+'</span></div>';}).join('');}
-function exportPDF(){const r=recipes.find(x=>x.id===calcId)||loadArchives().find(x=>x.id===calcId);if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),factor=(cible>0&&tot>0)?cible/tot:null,now=new Date();document.getElementById('pz-name').textContent=r.name;const sub=[];if(r.cat)sub.push(r.cat);sub.push('Base : '+tot.toFixed(1)+' g');if(factor)sub.push('→ Calculé pour : '+cible.toFixed(1)+' g');document.getElementById('pz-sub').textContent=sub.join(' · ');document.getElementById('pz-date').textContent='Imprimé le '+now.toLocaleDateString('fr-CH',{day:'2-digit',month:'long',year:'numeric'})+' à '+now.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'});document.getElementById('pz-table').innerHTML='<div class="result-table"><div class="result-head"><span>Ingrédient</span><span>Base (g)</span><span>'+(factor?'Pour '+cible.toFixed(0)+' g':'Base (g)')+'</span></div>'+r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor?base*factor:base;return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'—')+'</span><span class="c2">'+base.toFixed(1)+'</span><span class="c3 hi">'+calc.toFixed(1)+' g</span></div>';}).join('')+'<div class="result-row tot-row"><span class="c1">TOTAL</span><span class="c2">'+tot.toFixed(1)+' g</span><span class="c3">'+(factor?cible.toFixed(1)+' g':tot.toFixed(1)+' g')+'</span></div></div>';const notesEl=document.getElementById('pz-notes');if(r.notes){notesEl.innerHTML='<div style="font-family:Playfair Display,serif;font-size:14px;font-weight:700;color:#7B4F2E;margin-bottom:8px;">Procédé</div>'+esc(r.notes);}else{notesEl.innerHTML='';}const old=document.title;document.title=r.name+(factor?' — '+cible.toFixed(0)+'g':'');window.print();document.title=old;}
+function renderResultRows(r,factor){document.getElementById('result-rows').innerHTML=r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor!==null?base*factor:null,u=ing.u||'g';return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="c2">'+base.toFixed(1)+' '+u+'</span><span class="'+(calc!==null?'c3 hi':'c3')+'">'+(calc!==null?calc.toFixed(1)+' '+u:'—')+'</span></div>';}).join('');}
+function exportPDF(){const r=recipes.find(x=>x.id===calcId)||loadArchives().find(x=>x.id===calcId);if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),factor=(cible>0&&tot>0)?cible/tot:null,now=new Date();document.getElementById('pz-name').textContent=r.name;const sub=[];if(r.cat)sub.push(r.cat);sub.push('Base : '+tot.toFixed(1)+' g');if(factor)sub.push('→ Calculé pour : '+cible.toFixed(1)+' g');document.getElementById('pz-sub').textContent=sub.join(' · ');document.getElementById('pz-date').textContent='Imprimé le '+now.toLocaleDateString('fr-CH',{day:'2-digit',month:'long',year:'numeric'})+' à '+now.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'});document.getElementById('pz-table').innerHTML='<div class="result-table"><div class="result-head"><span>Ingrédient</span><span>Base (g)</span><span>'+(factor?'Pour '+cible.toFixed(0)+' g':'Base (g)')+'</span></div>'+r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor?base*factor:base,u=ing.u||'g';return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'—')+'</span><span class="c2">'+base.toFixed(1)+' '+u+'</span><span class="c3 hi">'+calc.toFixed(1)+' '+u+'</span></div>';}).join('')+'<div class="result-row tot-row"><span class="c1">TOTAL</span><span class="c2">'+tot.toFixed(1)+' g</span><span class="c3">'+(factor?cible.toFixed(1)+' g':tot.toFixed(1)+' g')+'</span></div></div>';const notesEl=document.getElementById('pz-notes');if(r.notes){notesEl.innerHTML='<div style="font-family:Playfair Display,serif;font-size:14px;font-weight:700;color:#7B4F2E;margin-bottom:8px;">Procédé</div>'+esc(r.notes);}else{notesEl.innerHTML='';}const old=document.title;document.title=r.name+(factor?' — '+cible.toFixed(0)+'g':'');window.print();document.title=old;}
 function renderArchives(){
   const archives=loadArchives();
   const q=(document.getElementById('arch-search').value||'').trim().toLowerCase();
@@ -1018,7 +1028,7 @@ function showArchiveView(id){
   const ingSection=document.getElementById('view-ing-section');
   if(r.ings&&r.ings.length){
     const tot=totalOf(r.ings);
-    ingSection.innerHTML='<div class="ing-section-title">Ingrédients — '+r.ings.length+' · '+tot.toFixed(0)+' g</div><div class="ing-table">'+r.ings.map(i=>'<div class="ing-tr"><span class="ing-n">'+esc(i.n||'—')+'</span><span class="ing-q">'+(parseFloat(i.q)?parseFloat(i.q).toFixed(0)+' g':'—')+'</span></div>').join('')+'<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">'+tot.toFixed(0)+' g</span></div></div>';
+    ingSection.innerHTML='<div class="ing-section-title">Ingrédients — '+r.ings.length+' · '+tot.toFixed(0)+' g</div><div class="ing-table">'+r.ings.map(i=>'<div class="ing-tr"><span class="ing-n">'+esc(i.n||'—')+'</span><span class="ing-q">'+(parseFloat(i.q)?parseFloat(i.q).toFixed(0):'—')+'</span><span class="ing-u">'+(i.u?esc(i.u):(parseFloat(i.q)?'g':''))+'</span></div>').join('')+'<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">'+tot.toFixed(0)+' g</span></div></div>';
   }else{
     ingSection.innerHTML='<div class="notes-box" style="color:var(--gray);font-style:italic;">Quantités non précisées sur la fiche originale.</div>';
   }
