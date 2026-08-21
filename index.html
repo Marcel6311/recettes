@@ -320,6 +320,7 @@ let recipes=[],currentId=null,editId=null,editIngs=[],calcId=null,activeFilter=n
 function totalOf(ings){return(ings||[]).reduce((s,i)=>s+(parseFloat(i.q)||0),0);}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtQ(q){const v=parseFloat(q);if(isNaN(v))return'—';if(Number.isInteger(v))return String(v);return v.toLocaleString('fr-CH',{maximumFractionDigits:3});}
 function syncStatus(st,msg){}
 function getCats(){return[...new Set(recipes.map(r=>r.cat).filter(Boolean))].sort();}
 function getAllIngs(){return[...new Set(recipes.flatMap(r=>r.ings.map(i=>i.n)).filter(Boolean))].sort();}
@@ -813,7 +814,7 @@ function showView(id){
   document.getElementById('view-cat-badge').innerHTML=r.cat?'<div class="badge">'+esc(r.cat)+'</div>':'';
   let ih='<div class="section-title">Ingrédients — '+r.ings.length+' · Total : '+tot.toFixed(1)+' g</div>';
   if(!r.ings.length)ih+='<div class="empty">Aucun ingrédient.</div>';
-  else ih+='<div class="ing-table">'+r.ings.map(i=>'<div class="ing-tr"><span class="ing-n">'+(esc(i.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="ing-q">'+(parseFloat(i.q)||0).toFixed(1)+'</span><span class="ing-u">'+(i.u?esc(i.u):'g')+'</span></div>').join('')+'<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">'+tot.toFixed(1)+' g</span></div></div>';
+  else ih+='<div class="ing-table">'+r.ings.map(i=>'<div class="ing-tr"><span class="ing-n">'+(esc(i.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="ing-q">'+fmtQ(i.q)+'</span><span class="ing-u">'+(i.u?esc(i.u):'g')+'</span></div>').join('')+'<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">'+tot.toFixed(1)+' g</span></div></div>';
   document.getElementById('view-ing-section').innerHTML=ih;
   document.getElementById('view-notes-section').innerHTML=r.notes?'<div class="section-title" style="margin-top:20px">Notes</div><div class="notes-box">'+esc(r.notes)+'</div>':'';
   // Boutons précédent / suivant
@@ -1028,7 +1029,7 @@ function showArchiveView(id){
   const ingSection=document.getElementById('view-ing-section');
   if(r.ings&&r.ings.length){
     const tot=totalOf(r.ings);
-    ingSection.innerHTML='<div class="ing-section-title">Ingrédients — '+r.ings.length+' · '+tot.toFixed(0)+' g</div><div class="ing-table">'+r.ings.map(i=>'<div class="ing-tr"><span class="ing-n">'+esc(i.n||'—')+'</span><span class="ing-q">'+(parseFloat(i.q)?parseFloat(i.q).toFixed(0):'—')+'</span><span class="ing-u">'+(i.u?esc(i.u):(parseFloat(i.q)?'g':''))+'</span></div>').join('')+'<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">'+tot.toFixed(0)+' g</span></div></div>';
+    ingSection.innerHTML='<div class="ing-section-title">Ingrédients — '+r.ings.length+' · '+tot.toFixed(0)+' g</div><div class="ing-table">'+r.ings.map(i=>'<div class="ing-tr"><span class="ing-n">'+esc(i.n||'—')+'</span><span class="ing-q">'+fmtQ(i.q)+'</span><span class="ing-u">'+(i.u?esc(i.u):(parseFloat(i.q)?'g':''))+'</span></div>').join('')+'<div class="ing-tr tot"><span class="ing-n">TOTAL</span><span class="ing-q">'+tot.toFixed(0)+' g</span></div></div>';
   }else{
     ingSection.innerHTML='<div class="notes-box" style="color:var(--gray);font-style:italic;">Quantités non précisées sur la fiche originale.</div>';
   }
