@@ -607,8 +607,8 @@ function renderBigSearch(){
     el.innerHTML='<div class="empty" style="padding:30px;color:var(--gray)">Tapez pour rechercher…</div>';
     return;
   }
-  // Chercher par nom ET par ingrédient dans recettes ET archives
-  let myResults=[], archResults=[];
+  // Chercher par nom ET par ingrédient dans recettes ET archives ET classeur
+  let myResults=[], archResults=[], classeurResults=[], sfResults=[];
   recipes.forEach(r=>{
     const matchName=r.name.toLowerCase().includes(q);
     const matchedIngs=r.ings.filter(i=>(i.n||'').toLowerCase().includes(q));
@@ -619,36 +619,65 @@ function renderBigSearch(){
     const matchedIngs=(r.ings||[]).filter(i=>(i.n||'').toLowerCase().includes(q));
     if(matchName||matchedIngs.length>0) archResults.push({r,matchName,matchedIngs,isArch:true});
   });
-  const allResults=[...myResults,...archResults];
-  if(!allResults.length){
+  // Chercher dans RECETTES_DATA (classeur PDF)
+  Object.values(RECETTES_DATA).forEach(r=>{
+    const matchName=(r.nom||'').toLowerCase().includes(q)||String(r.no).includes(q);
+    const ingsToSearch=(r.ings_qty||[]).map(i=>i.n).concat(r.ings||[]);
+    const matchedIngs=ingsToSearch.filter(n=>(n||'').toLowerCase().includes(q));
+    if(matchName||matchedIngs.length>0) classeurResults.push({r,matchedIngs:[...new Set(matchedIngs)]});
+  });
+  // Chercher dans SF_DATA (semi-fabriqués)
+  Object.values(SF_DATA).forEach(r=>{
+    const matchName=(r.nom||'').toLowerCase().includes(q)||String(r.no).includes(q);
+    const ingsToSearch=(r.ings_qty||[]).map(i=>i.n).concat(r.ings||[]);
+    const matchedIngs=ingsToSearch.filter(n=>(n||'').toLowerCase().includes(q));
+    if(matchName||matchedIngs.length>0) sfResults.push({r,matchedIngs:[...new Set(matchedIngs)]});
+  });
+  const total=myResults.length+archResults.length+classeurResults.length+sfResults.length;
+  if(!total){
     el.innerHTML='<div class="empty" style="padding:30px;color:var(--gray)">Aucun résultat pour "'+esc(q)+'"</div>';
     return;
   }
   el.innerHTML='';
-  function makeSection(label, results){
+  function makeSection(label, results, renderRow){
     if(!results.length) return;
     const hdr=document.createElement('div');
     hdr.style.cssText='padding:8px 16px;font-size:11px;font-weight:700;color:var(--gray);background:var(--parchment);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--wheat);';
     hdr.textContent=label;
     el.appendChild(hdr);
-    results.forEach(function({r,matchName,matchedIngs,isArch},idx){
-      const row=document.createElement('div');
-      row.style.cssText='display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--wheat);background:'+(idx%2===0?'#fff':'var(--cream)')+';';
-      const ingHint=matchedIngs.length?'<div style="font-size:12px;color:var(--caramel);margin-top:3px">🧂 '+matchedIngs.map(i=>esc(i.n)).join(', ')+'</div>':'';
-      const badge=isArch?'<span style="font-size:11px;background:var(--brown);color:var(--wheat);border-radius:4px;padding:1px 5px;margin-right:6px;">🗂️ Archive</span>':'';
-      const catHint=(!isArch&&r.cat)?'<span style="font-size:11px;color:var(--gray);margin-right:8px">'+esc(r.cat)+'</span>':'';
-      row.innerHTML='<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:15px;color:var(--dark)">'+esc(r.name)+'</div><div style="margin-top:2px">'+badge+catHint+'</div>'+ingHint+'</div><span style="color:var(--gray);font-size:18px;padding-left:8px">›</span>';
-      const action=isArch?()=>showArchiveView(r.id):()=>showView(r.id);
-      row.addEventListener('click',action);
-      let tm=false;
-      row.addEventListener('touchstart',()=>{tm=false;},{passive:true});
-      row.addEventListener('touchmove',()=>{tm=true;},{passive:true});
-      row.addEventListener('touchend',e=>{if(!tm){e.preventDefault();action();}},{passive:false});
-      el.appendChild(row);
-    });
+    results.forEach((item,idx)=>renderRow(item,idx));
   }
-  makeSection('Mes recettes ('+myResults.length+')', myResults);
-  makeSection('Archives ('+archResults.length+')', archResults);
+  function addRow(nom, subtitle, ingHint, action, idx){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--wheat);background:'+(idx%2===0?'#fff':'var(--cream)')+';';
+    row.innerHTML='<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:15px;color:var(--dark)">'+nom+'</div>'+(subtitle?'<div style="margin-top:2px">'+subtitle+'</div>':'')+(ingHint?'<div style="font-size:12px;color:var(--caramel);margin-top:3px">🧂 '+ingHint+'</div>':'')+'</div><span style="color:var(--gray);font-size:18px;padding-left:8px">›</span>';
+    row.addEventListener('click',action);
+    let tm=false;
+    row.addEventListener('touchstart',()=>{tm=false;},{passive:true});
+    row.addEventListener('touchmove',()=>{tm=true;},{passive:true});
+    row.addEventListener('touchend',e=>{if(!tm){e.preventDefault();action();}},{passive:false});
+    el.appendChild(row);
+  }
+  makeSection('Mes recettes ('+myResults.length+')', myResults, ({r,matchedIngs,isArch},idx)=>{
+    const ingHint=matchedIngs.length?matchedIngs.map(i=>esc(i.n)).join(', '):'';
+    const badge=isArch?'<span style="font-size:11px;background:var(--brown);color:var(--wheat);border-radius:4px;padding:1px 5px;margin-right:6px;">🗂️ Archive</span>':'';
+    const catHint=(!isArch&&r.cat)?'<span style="font-size:11px;color:var(--gray);margin-right:8px">'+esc(r.cat)+'</span>':'';
+    addRow(esc(r.name), badge+catHint, ingHint, ()=>showView(r.id), idx);
+  });
+  makeSection('Archives ('+archResults.length+')', archResults, ({r,matchedIngs},idx)=>{
+    const ingHint=matchedIngs.length?matchedIngs.map(i=>esc(i.n)).join(', '):'';
+    addRow(esc(r.name),'<span style="font-size:11px;background:var(--brown);color:var(--wheat);border-radius:4px;padding:1px 5px;">🗂️ Archive</span>',ingHint,()=>showArchiveView(r.id),idx);
+  });
+  makeSection('Classeur — Recettes ('+classeurResults.length+')', classeurResults, ({r,matchedIngs},idx)=>{
+    const ingHint=matchedIngs.length?matchedIngs.slice(0,4).map(n=>esc(n)).join(', '):'';
+    const sub='<span style="font-size:11px;color:var(--caramel);font-weight:700;margin-right:6px;">N° '+r.no+'</span><span style="font-size:11px;color:var(--gray);">'+esc(r.groupe||'')+'</span>';
+    addRow(esc(r.nom), sub, ingHint, ()=>showRview(r), idx);
+  });
+  makeSection('Classeur — Semi-fabriqués ('+sfResults.length+')', sfResults, ({r,matchedIngs},idx)=>{
+    const ingHint=matchedIngs.length?matchedIngs.slice(0,4).map(n=>esc(n)).join(', '):'';
+    const sub='<span style="font-size:11px;color:var(--brown);font-weight:700;margin-right:6px;">SF '+r.no+'</span><span style="font-size:11px;color:var(--gray);">'+esc(r.groupe||'')+'</span>';
+    addRow(esc(r.nom), sub, ingHint, ()=>showRview(r), idx);
+  });
 }
 function openBottomPicker(title, items, onPick, onRename, onDelete, onNew){
   const old=document.getElementById('bottom-picker-modal');
