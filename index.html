@@ -233,6 +233,12 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .rv-rdt-val{font-size:16px;font-weight:700;color:var(--dark);}
 .rv-rdt-lbl{font-size:10px;color:var(--gray);margin-top:1px;}
 .rv-back{display:flex;align-items:center;gap:6px;color:var(--caramel);font-size:13px;font-weight:600;cursor:pointer;padding:10px 0 14px;}
+.rview-nav{display:flex;align-items:center;justify-content:space-between;padding:6px 0 12px;gap:8px;flex-wrap:wrap;}
+.rview-pager{display:flex;align-items:center;gap:6px;}
+.rview-pager-btn{background:var(--wheat);border:none;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:700;color:var(--brown);cursor:pointer;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background .15s;}
+.rview-pager-btn:hover{background:var(--caramel);color:#fff;}
+.rview-pager-btn.off{visibility:hidden;pointer-events:none;}
+.rview-pager-pos{font-size:11px;color:var(--gray);min-width:46px;text-align:center;font-variant-numeric:tabular-nums;}
 
 .rv-ing-tbl{display:flex;flex-direction:column;gap:0;}
 .rv-ing-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--wheat);font-size:13px;}
@@ -1425,7 +1431,7 @@ PAGE_TITLES['classeur']='📚 Classeur';
 PAGE_TITLES['couts']='💰 Tableau des coûts';
 PAGE_TITLES['sf-index']='🔗 Index semi-fabriqués';
 PAGE_TITLES['mp']='🧂 Matières premières';
-PAGE_TITLES['rview']='';let currentRview=null;
+PAGE_TITLES['rview']='';let currentRview=null;let currentRviewList=[];let currentRviewIdx=-1;
 PAGE_TITLES['fiches']='📄 Fiches Richemont';
 PAGE_TITLES['fiche-view']='';
 
@@ -1460,7 +1466,11 @@ function openByNom(nom){
   notify('Recette « '+nom+' » introuvable.');
 }
 
+function prevRview(){if(currentRviewIdx>0)showRview(currentRviewList[currentRviewIdx-1]);}
+function nextRview(){if(currentRviewIdx<currentRviewList.length-1)showRview(currentRviewList[currentRviewIdx+1]);}
 function showRview(r){currentRview=r;
+  currentRviewList=r.is_sf?Object.values(SF_DATA).sort((a,b)=>a.no-b.no):RECETTES_DATA;
+  currentRviewIdx=currentRviewList.findIndex(x=>x.no===r.no);
   PAGE_TITLES['rview']='📄 '+r.nom;
   const ings=r.ings||[];
   const rdt=r.rdt||{};
@@ -1475,8 +1485,17 @@ function showRview(r){currentRview=r;
   if(r.tech&&r.tech.trim()){
     techHtml='<div class="rv-section"><div class="rv-section-title">Technique</div><div class="rv-tech">'+esc(r.tech)+'</div></div>';
   }
+  const _prev=currentRviewIdx>0?currentRviewList[currentRviewIdx-1]:null;
+  const _next=currentRviewIdx<currentRviewList.length-1?currentRviewList[currentRviewIdx+1]:null;
+  const _navHtml='<div class="rview-nav">'
+    +'<div class="rv-back" onclick="goTo(\'classeur\')" style="padding:0">← Retour</div>'
+    +'<div class="rview-pager">'
+    +(_prev?'<button class="rview-pager-btn" onclick="prevRview()" title="'+esc(_prev.nom)+'">&#8592; '+esc(_prev.nom)+'</button>':'<button class="rview-pager-btn off">&#8592;</button>')
+    +'<span class="rview-pager-pos">'+(currentRviewIdx+1)+' / '+currentRviewList.length+'</span>'
+    +(_next?'<button class="rview-pager-btn" onclick="nextRview()" title="'+esc(_next.nom)+'">'+esc(_next.nom)+' &#8594;</button>':'<button class="rview-pager-btn off">&#8594;</button>')
+    +'</div></div>';
   document.getElementById('rview-content').innerHTML=
-    '<div style="padding:12px 0 6px"><div class="rv-back" onclick="goTo(\'classeur\')">← Retour</div></div>'
+    _navHtml
     +'<div class="rv-header">'
     +'<div class="rv-no">'+(r.is_sf?'Semi-fabriqué SF ':'Recette N° ')+esc(String(r.no))+'  ·  '+esc(r.groupe||'')+'</div>'
     +'<div class="rv-nom">'+esc(r.nom)+'</div>'
