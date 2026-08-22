@@ -1438,6 +1438,12 @@ PAGE_TITLES['fiche-view']='';
 })();
 
 // ─── Ouvrir une recette depuis le Classeur ────────────────────────────────────
+function openByNo(no){
+  // Cherche dans RECETTES_DATA par numéro (toujours unique)
+  const entry=RECETTES_DATA.find(x=>x.no===no);
+  if(entry){showRview(entry);return;}
+  notify('Recette N°'+no+' introuvable.');
+}
 function openByNom(nom){
   if(!nom)return;
   const n=nom.toLowerCase().trim();
@@ -1675,7 +1681,7 @@ function renderCouts(){
   items.forEach(r=>{
     const pieces=r.nb_pieces?r.nb_pieces+'×':'—';
     const poids=r.poids_piece_g?' <small style="color:var(--gray)">'+r.poids_piece_g+'g</small>':'';
-    html+='<div class="cost-row" style="cursor:pointer" onclick="openByNom(\''+r.nom.replace(/'/g,"\\'")+'\')">'
+    html+='<div class="cost-row" style="cursor:pointer" onclick="openByNo('+r.no+')">'
       +'<span class="cost-no">'+esc(r.no)+'</span>'
       +'<div><div class="cost-nom">'+esc(r.nom)+'</div>'
       +(r.date?'<div class="cost-grp">'+esc(r.date)+'</div>':'')+'</div>'
