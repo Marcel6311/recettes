@@ -1697,9 +1697,68 @@ function resetFicheTarget(){
 }
 
 function _printFicheView(){
+  const f=_ficheViewData;
+  if(!f)return;
+  const groupes=f.groupes||[];
+  const baseTotal=_ficheTotalBase();
+  const scale=(_ficheViewTargetG&&baseTotal>0)?_ficheViewTargetG/baseTotal:1;
+  const now=new Date();
+  // Titre
+  document.getElementById('pz-name').textContent=f.nom;
+  // Sous-titre
+  const sub=[f.id];
+  if(f.source)sub.push(f.source);
+  if(f.rdt_desc)sub.push(f.rdt_desc);
+  if(baseTotal)sub.push('Base : '+baseTotal+'g');
+  if(_ficheViewTargetG&&baseTotal>0)sub.push('→ Cible : '+_ficheViewTargetG+'g');
+  document.getElementById('pz-sub').textContent=sub.join(' · ');
+  // Date
+  document.getElementById('pz-date').textContent='Imprimé le '+now.toLocaleDateString('fr-CH',{day:'2-digit',month:'long',year:'numeric'})+' à '+now.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'});
+  // Tableau par groupe
+  let tableHtml='<div class="result-table">';
+  groupes.forEach((g,gi)=>{
+    const ings=g.ings||[];
+    const hasQty=ings.some(i=>typeof i.q==='number'&&i.u==='g');
+    const baseGrp=hasQty?ings.filter(i=>i.u==='g').reduce((s,i)=>s+i.q,0):0;
+    const totScaled=_fmtQ(baseGrp,scale);
+    tableHtml+='<div class="result-head"><span>'
+      +esc(g.titre||('Groupe '+(gi+1)))+(hasQty?' — '+totScaled+'g':'')
+      +'</span><span>'+(hasQty?'Base':'')+'</span><span>'
+      +(hasQty&&scale!==1?'→ '+_ficheViewTargetG+'g':'')+'</span></div>';
+    ings.forEach(i=>{
+      if(hasQty&&i.u==='g'){
+        const pct=baseGrp?Math.round(i.q/baseGrp*100):0;
+        tableHtml+='<div class="result-row">'
+          +'<span class="c1">'+esc(i.n)+'<small style="color:#9A8C7A;margin-left:5px">'+pct+'%</small></span>'
+          +'<span class="c2">'+i.q+'g</span>'
+          +'<span class="c3 hi">'+_fmtQ(i.q,scale)+'g</span></div>';
+      } else {
+        const qDisp=typeof i.q==='number'?_fmtQ(i.q,scale):(i.q||'—');
+        tableHtml+='<div class="result-row">'
+          +'<span class="c1">'+esc(i.n)+'</span>'
+          +'<span class="c2">'+qDisp+(i.u?' '+i.u:'')+'</span>'
+          +'<span class="c3"></span></div>';
+      }
+    });
+    if(hasQty){
+      tableHtml+='<div class="result-row tot-row">'
+        +'<span class="c1">Total '+esc(g.titre||'groupe '+(gi+1))+'</span>'
+        +'<span class="c2">'+baseGrp+'g</span>'
+        +'<span class="c3">'+totScaled+'g</span></div>';
+    }
+  });
+  tableHtml+='</div>';
+  document.getElementById('pz-table').innerHTML=tableHtml;
+  // Procédé
+  document.getElementById('pz-notes').innerHTML='';
+  let techDiv=document.getElementById('pz-tech');
+  if(!techDiv){techDiv=document.createElement('div');techDiv.id='pz-tech';document.getElementById('print-zone').appendChild(techDiv);}
+  if(f.tech&&f.tech.trim()){
+    techDiv.innerHTML='<div id="pz-tech-title">Procédé de fabrication</div>'+esc(f.tech);
+  } else {techDiv.innerHTML='';}
+  // Impression
   const old=document.title;
-  const suf=_ficheViewTargetG?' ('+_ficheViewTargetG+'g)':'';
-  document.title=(_ficheViewData?_ficheViewData.nom:'Fiche')+suf;
+  document.title=f.nom+(_ficheViewTargetG?' — '+_ficheViewTargetG+'g':'');
   window.print();
   document.title=old;
 }
