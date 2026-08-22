@@ -155,6 +155,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   .p-title { font-family:'Playfair Display',serif; font-size:26px; color:#3E2010; margin-bottom:4px; }
   .p-sub { color:#9A8C7A; font-size:13px; margin-bottom:3px; }
   .p-date { color:#9A8C7A; font-size:11px; padding-bottom:14px; border-bottom:2px solid #C49A3C; margin-bottom:18px; }
+  .no-print { display:none !important; }
   @page { margin:1.5cm; }
 }
 #bottom-nav { position:fixed; bottom:0; left:0; right:0; background:var(--dark); border-top:1px solid rgba(255,255,255,.08); display:flex; padding-bottom:env(safe-area-inset-bottom,0px); z-index:200; }
@@ -1665,28 +1666,72 @@ function renderFiches(){
   if(nb) nb.textContent=Object.keys(FICHES_DATA).length;
 }
 
+// ─── Fiche view : calculatrice + impression ───────────────────────────────────
+let _ficheViewData=null,_ficheViewMult=1;
+
 function showFicheView(f){
+  _ficheViewData=f;
+  _ficheViewMult=1;
+  _renderFicheViewContent();
+  goTo('fiche-view');
+}
+
+function updateFicheMult(delta){
+  const next=_ficheViewMult+delta;
+  if(next<1||next>50)return;
+  _ficheViewMult=next;
+  _renderFicheViewContent();
+}
+
+function _printFicheView(){
+  const old=document.title;
+  document.title=(_ficheViewData?_ficheViewData.nom:'Fiche')+(_ficheViewMult>1?' ×'+_ficheViewMult:'');
+  window.print();
+  document.title=old;
+}
+
+function _fmtQ(base,mult){
+  const v=base*mult;
+  if(Number.isInteger(v))return String(v);
+  return v.toFixed(1);
+}
+
+function _renderFicheViewContent(){
+  const f=_ficheViewData;
+  const mult=_ficheViewMult;
   PAGE_TITLES['fiche-view']='📄 '+f.nom;
   const groupes=f.groupes||[];
+  // Barre calculatrice
   let html='<div style="padding:12px 0 6px"><div class="rv-back" onclick="goTo(\'fiches\');renderFiches()">← Fiches Richemont</div></div>'
-    +'<div class="rv-header">'
+    +'<div class="no-print" style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--dark);border-radius:10px;margin-bottom:10px;">'
+    +'<span style="font-size:11px;color:var(--gray);font-weight:700;letter-spacing:.06em;flex:1;text-transform:uppercase">Quantité ×</span>'
+    +'<button onclick="updateFicheMult(-1)" style="width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:var(--wheat);font-size:22px;line-height:1;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center">−</button>'
+    +'<span style="min-width:34px;text-align:center;font-size:22px;font-weight:700;color:var(--caramel);font-family:\'DM Mono\',monospace">'+mult+'</span>'
+    +'<button onclick="updateFicheMult(1)" style="width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:var(--wheat);font-size:22px;line-height:1;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center">+</button>'
+    +'<button onclick="_printFicheView()" style="margin-left:6px;padding:7px 14px;border-radius:20px;border:none;background:var(--caramel);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em;white-space:nowrap">🖨 Imprimer</button>'
+    +'</div>';
+  // En-tête
+  html+='<div class="rv-header">'
     +'<div class="rv-no">'+esc(f.id)+' · '+esc(f.source||'')+'</div>'
     +'<div class="rv-nom">'+esc(f.nom)+'</div>'
-    +(f.rdt_desc?'<div class="rv-meta">'+esc(f.rdt_desc)+'</div>':'')
+    +(f.rdt_desc?'<div class="rv-meta">'+esc(f.rdt_desc)+(mult>1?' <span style="color:var(--caramel);font-weight:700"> × '+mult+'</span>':'')+'</div>':'')
     +'</div>';
+  // Groupes d'ingrédients
   groupes.forEach((g,gi)=>{
     const ings=g.ings||[];
     const hasQty=ings.some(i=>typeof i.q==='number'&&i.u==='g');
-    const tot=hasQty?ings.filter(i=>i.u==='g').reduce((s,i)=>s+i.q,0):0;
+    const baseTotal=hasQty?ings.filter(i=>i.u==='g').reduce((s,i)=>s+i.q,0):0;
+    const totLabel=hasQty?_fmtQ(baseTotal,mult)+'g total':'';
     html+='<div class="rv-section">'
-      +'<div class="rv-section-title">'+esc(g.titre||('Groupe '+(gi+1)))+(tot?' — '+tot+'g total':'')+'</div>'
+      +'<div class="rv-section-title">'+esc(g.titre||('Groupe '+(gi+1)))+(totLabel?' — '+totLabel:'')+'</div>'
       +'<div class="rv-ing-tbl">';
     ings.forEach(i=>{
       if(hasQty&&i.u==='g'){
-        const pct=tot?Math.round(i.q/tot*100):0;
-        html+='<div class="rv-ing-row"><span class="rv-ing-q">'+i.q+'g</span><span class="rv-ing-n">'+esc(i.n)+'</span><span class="rv-ing-pct">'+pct+'%</span></div>';
+        const pct=baseTotal?Math.round(i.q/baseTotal*100):0;
+        html+='<div class="rv-ing-row"><span class="rv-ing-q">'+_fmtQ(i.q,mult)+'g</span><span class="rv-ing-n">'+esc(i.n)+'</span><span class="rv-ing-pct">'+pct+'%</span></div>';
       } else {
-        html+='<div class="rv-ing-row"><span class="rv-ing-q">'+(i.q?i.q+' '+(i.u||''):'—')+'</span><span class="rv-ing-n">'+esc(i.n)+'</span><span class="rv-ing-pct"></span></div>';
+        const qDisp=typeof i.q==='number'?_fmtQ(i.q,mult):(i.q||'');
+        html+='<div class="rv-ing-row"><span class="rv-ing-q">'+(qDisp?qDisp+' '+(i.u||''):'—')+'</span><span class="rv-ing-n">'+esc(i.n)+'</span><span class="rv-ing-pct"></span></div>';
       }
     });
     html+='</div></div>';
@@ -1695,7 +1740,6 @@ function showFicheView(f){
     html+='<div class="rv-section"><div class="rv-section-title">Procédé de fabrication</div><div class="rv-tech">'+esc(f.tech)+'</div></div>';
   }
   document.getElementById('fiche-view-content').innerHTML=html;
-  goTo('fiche-view');
 }
 
 // ─── Tableau des coûts ───────────────────────────────────────────────────────
