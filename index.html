@@ -1146,7 +1146,7 @@ function renderIngRows(){
 function addIng(){editIngs.push({id:uid(),n:'',q:'',u:''});renderIngRows();updateEditTotal();setTimeout(()=>{const inputs=document.querySelectorAll('#ing-editor-rows input[type=text]');if(inputs.length)inputs[inputs.length-1].focus();},30);}
 function removeIng(i){editIngs.splice(i,1);renderIngRows();updateEditTotal();}
 function updateEditTotal(){const tot=totalOf(editIngs);document.getElementById('edit-ing-title').textContent='Ingrédients — Total : '+tot.toFixed(1)+' g';document.getElementById('edit-total-bar').style.display=editIngs.length?'flex':'none';document.getElementById('edit-total-val').textContent=tot.toFixed(1)+' g';}
-async function saveRecipe(){const name=document.getElementById('edit-name').value.trim()||'Sans titre';const cat=document.getElementById('edit-cat').value.trim();const notes=document.getElementById('edit-notes').value;const idx=recipes.findIndex(x=>x.id===editId);if(idx<0)return;recipes[idx]={...recipes[idx],name,cat,notes,ings:editIngs.map(i=>({...i}))};await upsertRecipe(recipes[idx]);notify('✓ Recette sauvegardée !');renderHome();renderList();showView(editId);}
+async function _saveRecipeImpl(){const name=document.getElementById('edit-name').value.trim()||'Sans titre';const cat=document.getElementById('edit-cat').value.trim();const notes=document.getElementById('edit-notes').value;const idx=recipes.findIndex(x=>x.id===editId);if(idx<0)return;recipes[idx]={...recipes[idx],name,cat,notes,ings:editIngs.map(i=>({...i}))};await upsertRecipe(recipes[idx]);notify('✓ Recette sauvegardée !');renderHome();renderList();showView(editId);}
 async function delRecipe(id){const r=recipes.find(x=>x.id===id);if(!r||!confirm('Supprimer "'+r.name+'" ?'))return;recipes=recipes.filter(x=>x.id!==id);await deleteRecipeDB(id);if(currentId===id){currentId=null;renderHome();goTo('home');}renderList();renderSidebar();notify('Recette supprimée.');}
 let calcFromArchive=false,calcMode='g',calcMixed=false;
 function calcCurrent(){if(currentId)showCalc(currentId);else goTo('list');}
@@ -1389,10 +1389,9 @@ async function saveArchiveEdit(){
   showArchiveView(editId);
 }
 
-const _origSaveRecipe=saveRecipe;
 async function saveRecipe(){
   if(window._archiveEditMode){await saveArchiveEdit();return;}
-  await _origSaveRecipe();
+  await _saveRecipeImpl();
 }
 
 function exportArchivesJSON(){
