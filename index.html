@@ -667,7 +667,7 @@ function renderBigSearch(){
   });
   // Chercher dans FICHES_DATA (Fiches Richemont)
   Object.values(FICHES_DATA).forEach(f=>{
-    const matchNom=(f.nom||'').toLowerCase().includes(q)||(f.source||'').toLowerCase().includes(q);
+    const matchNom=(f.nom||'').toLowerCase().includes(q)||(f.source||'').toLowerCase().includes(q)||(f.id||'').toLowerCase().includes(q);
     const matchedIngs=(f.groupes||[]).flatMap(g=>(g.ings||[]).map(i=>i.n)).filter(n=>(n||'').toLowerCase().includes(q));
     if(matchNom||matchedIngs.length>0) fichesResults.push({f,matchedIngs:[...new Set(matchedIngs)]});
   });
@@ -1641,7 +1641,7 @@ function renderFiches(){
   let items=Object.values(FICHES_DATA);
   if(q){
     items=items.filter(f=>{
-      const matchNom=(f.nom||'').toLowerCase().includes(q)||(f.source||'').toLowerCase().includes(q);
+      const matchNom=(f.nom||'').toLowerCase().includes(q)||(f.source||'').toLowerCase().includes(q)||(f.id||'').toLowerCase().includes(q);
       const matchIng=(f.groupes||[]).some(g=>(g.ings||[]).some(i=>(i.n||'').toLowerCase().includes(q)));
       return matchNom||matchIng;
     });
@@ -1833,6 +1833,25 @@ function _renderFicheViewContent(){
   if(f.tech&&f.tech.trim()){
     html+='<div class="rv-section"><div class="rv-section-title">Procédé de fabrication</div><div class="rv-tech">'+esc(f.tech)+'</div></div>';
   }
+  // Navigation précédent / suivant
+  const allFiches=Object.values(FICHES_DATA);
+  const fi=allFiches.findIndex(x=>x.id===f.id);
+  let navHtml='<div class="no-print" style="display:flex;gap:8px;margin-top:16px;">';
+  if(fi>0){
+    const prev=allFiches[fi-1];
+    navHtml+='<button onclick="showFicheView(Object.values(FICHES_DATA).find(x=>x.id===\''+prev.id+'\'))" style="flex:1;padding:11px 12px;border-radius:10px;border:1.5px solid var(--wheat);background:var(--parchment);color:var(--brown);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left">← '+esc(prev.id)+' '+esc(prev.nom)+'</button>';
+  } else {
+    navHtml+='<div style="flex:1"></div>';
+  }
+  if(fi<allFiches.length-1){
+    const next=allFiches[fi+1];
+    navHtml+='<button onclick="showFicheView(Object.values(FICHES_DATA).find(x=>x.id===\''+next.id+'\'))" style="flex:1;padding:11px 12px;border-radius:10px;border:1.5px solid var(--wheat);background:var(--parchment);color:var(--brown);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:right">'+esc(next.id)+' '+esc(next.nom)+' →</button>';
+  } else {
+    navHtml+='<div style="flex:1"></div>';
+  }
+  navHtml+='</div>';
+  html+=navHtml;
+
   document.getElementById('fiche-view-content').innerHTML=html;
 }
 
