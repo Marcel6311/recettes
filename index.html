@@ -509,7 +509,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   <div id="escoffier-picker" style="display:flex;flex-direction:column;gap:16px;">
     <div style="background:var(--parchment);border:1px solid var(--wheat);border-radius:14px;padding:20px 18px;font-size:14px;color:var(--gray);line-height:1.7;">
       Le PDF reste <strong>sur votre Mac</strong> — aucun envoi réseau.<br>
-      Il s'ouvrira dans un <strong>nouvel onglet Safari</strong> avec toutes les 817 pages accessibles et la recherche ⌘F intégrée.
+      Le visualiseur s'ouvre en plein écran dans l'app, toutes les 817 pages accessibles.
     </div>
     <label style="display:flex;align-items:center;justify-content:center;gap:10px;background:var(--caramel);color:#fff;border-radius:14px;padding:16px 24px;font-size:16px;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;">
       📂 Sélectionner le PDF Escoffier
@@ -517,26 +517,35 @@ textarea.form-input { resize:vertical; line-height:1.6; }
     </label>
   </div>
 
-  <!-- État après sélection -->
+  <!-- Bouton ré-ouvrir (après sélection) -->
   <div id="escoffier-viewer" style="display:none;flex-direction:column;gap:16px;">
     <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:14px;padding:18px 16px;display:flex;align-items:center;gap:12px;">
       <span style="font-size:28px;">✅</span>
       <div>
-        <div style="font-weight:700;font-size:15px;color:#1b5e20;">PDF ouvert dans Safari</div>
+        <div style="font-weight:700;font-size:15px;color:#1b5e20;">PDF chargé</div>
         <div id="escoffier-filename" style="font-size:12px;color:#2e7d32;margin-top:2px;">—</div>
       </div>
     </div>
     <button onclick="escoffierReopen()" style="background:var(--caramel);color:#fff;border:none;border-radius:14px;padding:15px 24px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;width:100%;">
-      🔁 Ré-ouvrir dans Safari
+      📖 Ouvrir le visualiseur
     </button>
     <label style="display:flex;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.06);color:var(--dark);border:1.5px dashed var(--wheat);border-radius:14px;padding:14px 24px;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;">
       📂 Changer de fichier
       <input type="file" accept="application/pdf" onchange="openEscoffierFile(this)" style="display:none;">
     </label>
-    <div style="font-size:12px;color:var(--gray);text-align:center;line-height:1.6;">
-      Dans Safari : utilisez <strong>⌘F</strong> pour rechercher<br>et les flèches du clavier pour naviguer entre les pages.
-    </div>
   </div>
+</div>
+
+<!-- ════ OVERLAY PLEIN ÉCRAN PDF ESCOFFIER ════ -->
+<div id="escoffier-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;flex-direction:column;background:#1a1a1a;">
+  <!-- Barre de titre -->
+  <div style="flex-shrink:0;height:44px;background:#1a1a1a;display:flex;align-items:center;padding:0 12px;gap:10px;border-bottom:1px solid rgba(255,255,255,.1);">
+    <button onclick="escoffierClose()" style="background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:8px;padding:5px 12px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">← Retour</button>
+    <span style="color:rgba(255,255,255,.7);font-size:12px;font-family:'DM Sans',sans-serif;flex:1;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">Recettes August Escoffier — Guide Culinaire</span>
+    <span style="color:rgba(255,255,255,.4);font-size:11px;font-family:'DM Sans',sans-serif;">⌘F pour rechercher</span>
+  </div>
+  <!-- embed PDF natif – toutes les pages -->
+  <embed id="escoffier-embed" type="application/pdf" style="flex:1;width:100%;border:none;" src="">
 </div>
 
 <div id="bottom-nav">
@@ -1568,15 +1577,21 @@ function openEscoffierFile(input){
   if(!file)return;
   if(escoffierBlobUrl)URL.revokeObjectURL(escoffierBlobUrl);
   escoffierBlobUrl=URL.createObjectURL(file);
-  // Ouvrir dans un onglet natif Safari → toutes les 817 pages + ⌘F natif
-  window.open(escoffierBlobUrl,'_blank');
   document.getElementById('escoffier-picker').style.display='none';
-  const viewer=document.getElementById('escoffier-viewer');
-  viewer.style.display='flex';
+  document.getElementById('escoffier-viewer').style.display='flex';
   document.getElementById('escoffier-filename').textContent=file.name;
+  // Charger dans l'embed plein écran et afficher l'overlay
+  const embed=document.getElementById('escoffier-embed');
+  embed.src=escoffierBlobUrl;
+  document.getElementById('escoffier-overlay').style.display='flex';
 }
 function escoffierReopen(){
-  if(escoffierBlobUrl)window.open(escoffierBlobUrl,'_blank');
+  if(!escoffierBlobUrl)return;
+  document.getElementById('escoffier-embed').src=escoffierBlobUrl;
+  document.getElementById('escoffier-overlay').style.display='flex';
+}
+function escoffierClose(){
+  document.getElementById('escoffier-overlay').style.display='none';
 }
 
 // Peupler le filtre groupe des coûts
