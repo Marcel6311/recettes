@@ -430,6 +430,14 @@ textarea.form-input { resize:vertical; line-height:1.6; }
       </div>
       <div class="cl-card-count" id="fiches-count">125</div>
     </div>
+    <div class="cl-card" onclick="goTo('escoffier')">
+      <div class="cl-card-icon">👨‍🍳</div>
+      <div class="cl-card-body">
+        <div class="cl-card-title">Recettes August Escoffier</div>
+        <div class="cl-card-desc">Guide culinaire · PDF · recherche intégrée</div>
+      </div>
+      <div class="cl-card-count" style="font-size:14px">PDF</div>
+    </div>
   </div>
   <div style="margin-top:16px;padding:11px 13px;background:var(--parchment);border:1px solid var(--wheat);border-radius:10px;font-size:12px;color:var(--gray);line-height:1.6;">
     <strong style="color:var(--brown)">Source :</strong> Classeur_FINAL — 387 pages · 102 recettes · 57 semi-fabriqués
@@ -487,6 +495,38 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 <!-- ════════ FICHE RICHEMONT DÉTAIL ════════ -->
 <div class="page" id="page-fiche-view">
   <div id="fiche-view-content"></div>
+</div>
+
+<!-- ════════ RECETTES AUGUST ESCOFFIER ════════ -->
+<div class="page" id="page-escoffier" style="padding:0;">
+  <div style="position:sticky;top:52px;z-index:100;background:var(--dark);padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1);">
+    <button onclick="goTo('classeur')" style="background:none;border:none;color:var(--wheat);font-size:22px;cursor:pointer;padding:0 4px;line-height:1;">←</button>
+    <span id="escoffier-filename" style="color:var(--wheat);font-size:13px;font-family:'DM Sans',sans-serif;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Recettes August Escoffier</span>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <input id="escoffier-search-input" type="search" placeholder="Rechercher…" autocomplete="off"
+        style="padding:7px 10px;border:1.5px solid rgba(255,255,255,.2);border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;background:rgba(255,255,255,.08);color:var(--wheat);width:150px;outline:none;"
+        onkeydown="if(event.key==='Enter')escoffierSearch()">
+      <button onclick="escoffierSearch()" style="background:var(--caramel);border:none;color:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">🔍</button>
+    </div>
+  </div>
+  <!-- Sélecteur de fichier -->
+  <div id="escoffier-picker" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:32px;text-align:center;gap:20px;">
+    <div style="font-size:64px;">👨‍🍳</div>
+    <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--dark);">Recettes August Escoffier</div>
+    <div style="font-size:14px;color:var(--gray);max-width:300px;line-height:1.6;">
+      Sélectionnez le fichier PDF pour l'ouvrir dans le visualiseur intégré.<br>
+      Utilisez <strong>⌘F</strong> pour rechercher dans le PDF.
+    </div>
+    <label style="background:var(--caramel);color:#fff;border-radius:12px;padding:14px 24px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;display:inline-block;">
+      📂 Ouvrir le PDF
+      <input type="file" accept="application/pdf" onchange="openEscoffierFile(this)" style="display:none;">
+    </label>
+    <div style="font-size:11px;color:var(--gray);">Le fichier reste sur votre Mac · aucun envoi réseau</div>
+  </div>
+  <!-- Visualiseur PDF -->
+  <div id="escoffier-viewer" style="display:none;flex-direction:column;height:calc(100vh - 112px);">
+    <iframe id="escoffier-iframe" style="flex:1;width:100%;border:none;min-height:calc(100vh - 112px);" src="about:blank"></iframe>
+  </div>
 </div>
 
 <div id="bottom-nav">
@@ -1501,7 +1541,7 @@ async function loadFichesData(){
 }
 
 // Étendre la navigation
-PAGES.push('classeur','couts','sf-index','mp','rview','fiches','fiche-view');
+PAGES.push('classeur','couts','sf-index','mp','rview','fiches','fiche-view','escoffier');
 PAGE_TITLES['classeur']='📚 Classeur';
 PAGE_TITLES['couts']='💰 Tableau des coûts';
 PAGE_TITLES['sf-index']='🔗 Index semi-fabriqués';
@@ -1509,6 +1549,29 @@ PAGE_TITLES['mp']='🧂 Matières premières';
 PAGE_TITLES['rview']='';let currentRview=null;let currentRviewList=[];let currentRviewIdx=-1;
 PAGE_TITLES['fiches']='📄 Fiches Richemont';
 PAGE_TITLES['fiche-view']='';
+PAGE_TITLES['escoffier']='📖 Recettes August Escoffier';
+
+// ─── Escoffier PDF viewer ────────────────────────────────────────────
+let escoffierBlobUrl=null;
+function openEscoffierFile(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(escoffierBlobUrl)URL.revokeObjectURL(escoffierBlobUrl);
+  escoffierBlobUrl=URL.createObjectURL(file);
+  const iframe=document.getElementById('escoffier-iframe');
+  iframe.src=escoffierBlobUrl;
+  document.getElementById('escoffier-picker').style.display='none';
+  document.getElementById('escoffier-viewer').style.display='flex';
+  document.getElementById('escoffier-filename').textContent=file.name;
+}
+function escoffierSearch(){
+  const q=document.getElementById('escoffier-search-input').value.trim();
+  if(!q)return;
+  const iframe=document.getElementById('escoffier-iframe');
+  // Tenter window.find dans le contexte du navigateur (fonctionne en local)
+  try{iframe.contentWindow.find(q,false,false,true,false,true,false);}
+  catch(e){alert('Recherche : '+q+'\n\nUtilisez ⌘F dans le visualiseur PDF pour rechercher ce terme.');}
+}
 
 // Peupler le filtre groupe des coûts
 (function(){
