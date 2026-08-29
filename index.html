@@ -536,16 +536,30 @@ textarea.form-input { resize:vertical; line-height:1.6; }
   </div>
 </div>
 
-<!-- ════ OVERLAY PLEIN ÉCRAN PDF ESCOFFIER ════ -->
-<div id="escoffier-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;flex-direction:column;background:#1a1a1a;">
-  <!-- Barre de titre -->
-  <div style="flex-shrink:0;height:44px;background:#1a1a1a;display:flex;align-items:center;padding:0 12px;gap:10px;border-bottom:1px solid rgba(255,255,255,.1);">
-    <button onclick="escoffierClose()" style="background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:8px;padding:5px 12px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">← Retour</button>
-    <span style="color:rgba(255,255,255,.7);font-size:12px;font-family:'DM Sans',sans-serif;flex:1;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">Recettes August Escoffier — Guide Culinaire</span>
-    <span style="color:rgba(255,255,255,.4);font-size:11px;font-family:'DM Sans',sans-serif;">⌘F pour rechercher</span>
+<!-- ════ OVERLAY PLEIN ÉCRAN PDF ESCOFFIER (PDF.js) ════ -->
+<div id="escoffier-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;flex-direction:column;background:#525659;">
+  <!-- Barre outils -->
+  <div id="esc-toolbar" style="flex-shrink:0;background:#323639;display:flex;align-items:center;padding:8px 10px;gap:8px;border-bottom:1px solid rgba(255,255,255,.08);">
+    <button onclick="escoffierClose()" style="flex-shrink:0;background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">←</button>
+    <input id="esc-search-input" type="search" placeholder="Rechercher dans le PDF…" autocomplete="off" autocorrect="off"
+      style="flex:1;min-width:0;padding:7px 10px;border:1.5px solid rgba(255,255,255,.2);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:rgba(255,255,255,.1);color:#fff;outline:none;"
+      onkeydown="if(event.key==='Enter')escoffierFind(1)">
+    <button onclick="escoffierFind(-1)" style="flex-shrink:0;background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;">↑</button>
+    <button onclick="escoffierFind(1)" style="flex-shrink:0;background:var(--caramel);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;">↓</button>
+    <span id="esc-match-info" style="flex-shrink:0;font-size:11px;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;min-width:40px;text-align:right;"></span>
   </div>
-  <!-- embed PDF natif – toutes les pages -->
-  <embed id="escoffier-embed" type="application/pdf" style="flex:1;width:100%;border:none;" src="">
+  <!-- Info page -->
+  <div id="esc-page-info" style="position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:4px 10px;border-radius:20px;font-family:'DM Sans',sans-serif;z-index:10;display:none;"></div>
+  <!-- Conteneur de rendu PDF.js -->
+  <div id="esc-container" style="flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 0;-webkit-overflow-scrolling:touch;"></div>
+  <!-- Loading -->
+  <div id="esc-loading" style="position:absolute;inset:44px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#525659;gap:16px;">
+    <div style="font-size:40px;">📖</div>
+    <div id="esc-loading-text" style="color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;">Chargement…</div>
+    <div id="esc-progress-bar" style="width:200px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;">
+      <div id="esc-progress-fill" style="height:100%;width:0%;background:var(--caramel);transition:width .3s;border-radius:2px;"></div>
+    </div>
+  </div>
 </div>
 
 <div id="bottom-nav">
@@ -1570,28 +1584,153 @@ PAGE_TITLES['fiches']='📄 Fiches Richemont';
 PAGE_TITLES['fiche-view']='';
 PAGE_TITLES['escoffier']='📖 Recettes August Escoffier';
 
-// ─── Escoffier PDF viewer ─────────────────────────────────────────────
-let escoffierBlobUrl=null;
+// ─── Escoffier PDF.js viewer ──────────────────────────────────────────
+let escPdfDoc=null, escRenderedPages={}, escObserver=null;
+let escMatches=[], escMatchIdx=0, escSearchQuery='';
+
+function escLoadPdfJs(cb){
+  if(window.pdfjsLib){cb();return;}
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload=()=>{
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    cb();
+  };
+  document.head.appendChild(s);
+}
+
 function openEscoffierFile(input){
   const file=input.files[0];
   if(!file)return;
-  if(escoffierBlobUrl)URL.revokeObjectURL(escoffierBlobUrl);
-  escoffierBlobUrl=URL.createObjectURL(file);
   document.getElementById('escoffier-picker').style.display='none';
   document.getElementById('escoffier-viewer').style.display='flex';
   document.getElementById('escoffier-filename').textContent=file.name;
-  // Charger dans l'embed plein écran et afficher l'overlay
-  const embed=document.getElementById('escoffier-embed');
-  embed.src=escoffierBlobUrl;
   document.getElementById('escoffier-overlay').style.display='flex';
+  document.getElementById('esc-loading').style.display='flex';
+  document.getElementById('esc-container').innerHTML='';
+  document.getElementById('esc-loading-text').textContent='Chargement du PDF…';
+  escRenderedPages={};
+
+  escLoadPdfJs(()=>{
+    const reader=new FileReader();
+    reader.onload=async(e)=>{
+      try{
+        document.getElementById('esc-loading-text').textContent='Analyse du PDF… (55 Mo)';
+        const typedArray=new Uint8Array(e.target.result);
+        const loadingTask=pdfjsLib.getDocument({data:typedArray});
+        loadingTask.onProgress=function(p){
+          if(p.total>0){
+            const pct=Math.round(p.loaded/p.total*100);
+            document.getElementById('esc-progress-fill').style.width=pct+'%';
+            document.getElementById('esc-loading-text').textContent='Chargement… '+pct+' %';
+          }
+        };
+        escPdfDoc=await loadingTask.promise;
+        document.getElementById('esc-loading').style.display='none';
+        escBuildPlaceholders();
+        escSetupLazyRender();
+      }catch(err){
+        document.getElementById('esc-loading-text').textContent='Erreur : '+err.message;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
 }
+
+function escBuildPlaceholders(){
+  const container=document.getElementById('esc-container');
+  container.innerHTML='';
+  const w=Math.min(window.innerWidth-16,700);
+  for(let i=1;i<=escPdfDoc.numPages;i++){
+    const div=document.createElement('div');
+    div.id='esc-p-'+i;
+    div.dataset.page=i;
+    div.style.cssText='width:'+w+'px;margin:6px auto;background:#fff;display:block;min-height:'+Math.round(w*1.414)+'px;';
+    const lbl=document.createElement('div');
+    lbl.style.cssText='position:absolute;bottom:4px;right:8px;font-size:11px;color:#999;';
+    lbl.textContent=i;
+    div.style.position='relative';
+    div.appendChild(lbl);
+    container.appendChild(div);
+  }
+}
+
+function escSetupLazyRender(){
+  if(escObserver)escObserver.disconnect();
+  escObserver=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const pg=parseInt(entry.target.dataset.page);
+        if(!escRenderedPages[pg])escRenderPage(pg,entry.target);
+      }
+    });
+  },{root:document.getElementById('esc-container'),rootMargin:'300px 0px'});
+  document.querySelectorAll('#esc-container [data-page]').forEach(el=>escObserver.observe(el));
+}
+
+async function escRenderPage(pageNum,container){
+  if(escRenderedPages[pageNum])return;
+  escRenderedPages[pageNum]=true;
+  try{
+    const page=await escPdfDoc.getPage(pageNum);
+    const w=container.offsetWidth||Math.min(window.innerWidth-16,700);
+    const vp=page.getViewport({scale:w/page.getViewport({scale:1}).width});
+    const canvas=document.createElement('canvas');
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=Math.round(vp.width*dpr);
+    canvas.height=Math.round(vp.height*dpr);
+    canvas.style.cssText='width:100%;height:auto;display:block;';
+    container.style.minHeight='';
+    container.innerHTML='';
+    container.appendChild(canvas);
+    const lbl=document.createElement('div');
+    lbl.style.cssText='text-align:center;font-size:10px;color:#aaa;padding:2px 0 4px;background:#525659;';
+    lbl.textContent='— '+pageNum+' —';
+    container.appendChild(lbl);
+    const ctx=canvas.getContext('2d');
+    ctx.scale(dpr,dpr);
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
+  }catch(e){escRenderedPages[pageNum]=false;}
+}
+
 function escoffierReopen(){
-  if(!escoffierBlobUrl)return;
-  document.getElementById('escoffier-embed').src=escoffierBlobUrl;
   document.getElementById('escoffier-overlay').style.display='flex';
 }
 function escoffierClose(){
   document.getElementById('escoffier-overlay').style.display='none';
+}
+
+async function escoffierFind(dir){
+  const q=document.getElementById('esc-search-input').value.trim();
+  if(!escPdfDoc||!q)return;
+  const info=document.getElementById('esc-match-info');
+  info.textContent='…';
+  // Si nouvelle requête, reconstruire la liste des correspondances
+  if(q!==escSearchQuery){
+    escSearchQuery=q;
+    escMatches=[];
+    escMatchIdx=0;
+    const regex=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+    for(let p=1;p<=escPdfDoc.numPages;p++){
+      try{
+        const page=await escPdfDoc.getPage(p);
+        const tc=await page.getTextContent();
+        const text=tc.items.map(i=>i.str).join(' ');
+        const matches=[...text.matchAll(regex)];
+        matches.forEach(()=>escMatches.push(p));
+      }catch(e){}
+    }
+  }
+  if(escMatches.length===0){info.textContent='0';return;}
+  escMatchIdx=(escMatchIdx+dir+escMatches.length)%escMatches.length;
+  info.textContent=(escMatchIdx+1)+'/'+escMatches.length;
+  const pg=escMatches[escMatchIdx];
+  const el=document.getElementById('esc-p-'+pg);
+  if(el){
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+    // Forcer le rendu si pas encore fait
+    if(!escRenderedPages[pg])await escRenderPage(pg,el);
+  }
 }
 
 // Peupler le filtre groupe des coûts
