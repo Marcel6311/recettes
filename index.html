@@ -1587,6 +1587,7 @@ PAGE_TITLES['escoffier']='📖 Recettes August Escoffier';
 // ─── Escoffier PDF.js viewer ──────────────────────────────────────────
 let escPdfDoc=null, escRenderedPages={}, escObserver=null;
 let escMatches=[], escMatchIdx=0, escSearchQuery='';
+let escTextCache={}; // pageNum → {items, vp, dpr}
 
 function escLoadPdfJs(cb){
   if(window.pdfjsLib){cb();return;}
@@ -1609,7 +1610,8 @@ function openEscoffierFile(input){
   document.getElementById('esc-loading').style.display='flex';
   document.getElementById('esc-container').innerHTML='';
   document.getElementById('esc-loading-text').textContent='Chargement du PDF…';
-  escRenderedPages={};
+  document.getElementById('esc-match-info').textContent='';
+  escRenderedPages={};escTextCache={};escMatches=[];escSearchQuery='';
 
   escLoadPdfJs(()=>{
     const reader=new FileReader();
@@ -1645,11 +1647,10 @@ function escBuildPlaceholders(){
     const div=document.createElement('div');
     div.id='esc-p-'+i;
     div.dataset.page=i;
-    div.style.cssText='width:'+w+'px;margin:6px auto;background:#fff;display:block;min-height:'+Math.round(w*1.414)+'px;';
+    div.style.cssText='position:relative;width:'+w+'px;margin:6px auto;background:#fff;min-height:'+Math.round(w*1.414)+'px;';
     const lbl=document.createElement('div');
-    lbl.style.cssText='position:absolute;bottom:4px;right:8px;font-size:11px;color:#999;';
+    lbl.style.cssText='position:absolute;bottom:4px;right:8px;font-size:11px;color:#ccc;pointer-events:none;';
     lbl.textContent=i;
-    div.style.position='relative';
     div.appendChild(lbl);
     container.appendChild(div);
   }
@@ -1664,7 +1665,7 @@ function escSetupLazyRender(){
         if(!escRenderedPages[pg])escRenderPage(pg,entry.target);
       }
     });
-  },{root:document.getElementById('esc-container'),rootMargin:'300px 0px'});
+  },{root:document.getElementById('esc-container'),rootMargin:'400px 0px'});
   document.querySelectorAll('#esc-container [data-page]').forEach(el=>escObserver.observe(el));
 }
 
@@ -1674,23 +1675,75 @@ async function escRenderPage(pageNum,container){
   try{
     const page=await escPdfDoc.getPage(pageNum);
     const w=container.offsetWidth||Math.min(window.innerWidth-16,700);
-    const vp=page.getViewport({scale:w/page.getViewport({scale:1}).width});
-    const canvas=document.createElement('canvas');
+    const scale=w/page.getViewport({scale:1}).width;
+    const vp=page.getViewport({scale});
     const dpr=Math.min(window.devicePixelRatio||1,2);
+
+    const canvas=document.createElement('canvas');
     canvas.width=Math.round(vp.width*dpr);
     canvas.height=Math.round(vp.height*dpr);
     canvas.style.cssText='width:100%;height:auto;display:block;';
+
+    const lbl=document.createElement('div');
+    lbl.style.cssText='text-align:center;font-size:10px;color:#999;padding:2px 0 4px;background:#525659;';
+    lbl.textContent='— '+pageNum+' —';
+
     container.style.minHeight='';
     container.innerHTML='';
     container.appendChild(canvas);
-    const lbl=document.createElement('div');
-    lbl.style.cssText='text-align:center;font-size:10px;color:#aaa;padding:2px 0 4px;background:#525659;';
-    lbl.textContent='— '+pageNum+' —';
     container.appendChild(lbl);
+
     const ctx=canvas.getContext('2d');
     ctx.scale(dpr,dpr);
     await page.render({canvasContext:ctx,viewport:vp}).promise;
+
+    // Cacher le texte pour surlignage
+    const tc=await page.getTextContent();
+    escTextCache[pageNum]={items:tc.items,vp,dpr};
+
+    // Appliquer surlignage si recherche active
+    if(escSearchQuery)escDrawHighlights(pageNum,canvas);
+
   }catch(e){escRenderedPages[pageNum]=false;}
+}
+
+// ── Surlignage des occurrences sur canvas overlay ──────────────────────
+function escDrawHighlights(pageNum,canvasEl){
+  const cached=escTextCache[pageNum];
+  if(!cached||!escSearchQuery)return;
+  const container=document.getElementById('esc-p-'+pageNum);
+  if(!container)return;
+  const canvas=canvasEl||container.querySelector('canvas');
+  if(!canvas)return;
+
+  // Supprimer ancien overlay
+  const old=container.querySelector('.esc-hl');
+  if(old)old.remove();
+
+  const {items,vp,dpr}=cached;
+  const regex=new RegExp(escSearchQuery.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  const matching=items.filter(it=>{const r=regex.test(it.str);regex.lastIndex=0;return r;});
+  if(matching.length===0)return;
+
+  const hl=document.createElement('canvas');
+  hl.className='esc-hl';
+  hl.width=canvas.width;
+  hl.height=canvas.height;
+  hl.style.cssText='position:absolute;top:0;left:0;width:100%;height:auto;pointer-events:none;';
+  canvas.insertAdjacentElement('afterend',hl);
+
+  const ctx=hl.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.fillStyle='rgba(255,210,0,0.45)';
+
+  matching.forEach(item=>{
+    const tx=pdfjsLib.Util.transform(vp.transform,item.transform);
+    const x=tx[4];
+    const y=tx[5];
+    const w=item.width*vp.scale;
+    const h=Math.max(item.height*vp.scale,8);
+    ctx.fillRect(x,y-h,Math.max(w,4),h);
+  });
 }
 
 function escoffierReopen(){
@@ -1704,32 +1757,40 @@ async function escoffierFind(dir){
   const q=document.getElementById('esc-search-input').value.trim();
   if(!escPdfDoc||!q)return;
   const info=document.getElementById('esc-match-info');
-  info.textContent='…';
-  // Si nouvelle requête, reconstruire la liste des correspondances
+
   if(q!==escSearchQuery){
     escSearchQuery=q;
     escMatches=[];
     escMatchIdx=0;
+    info.textContent='scan…';
     const regex=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
     for(let p=1;p<=escPdfDoc.numPages;p++){
       try{
         const page=await escPdfDoc.getPage(p);
         const tc=await page.getTextContent();
         const text=tc.items.map(i=>i.str).join(' ');
-        const matches=[...text.matchAll(regex)];
-        matches.forEach(()=>escMatches.push(p));
+        let m;regex.lastIndex=0;
+        while((m=regex.exec(text))!==null)escMatches.push(p);
       }catch(e){}
+      if(p%100===0){
+        info.textContent=Math.round(p/escPdfDoc.numPages*100)+'%';
+        await new Promise(r=>setTimeout(r,0));
+      }
     }
+    // Redessiner les surligages sur les pages déjà rendues
+    Object.keys(escTextCache).forEach(pg=>escDrawHighlights(parseInt(pg)));
   }
-  if(escMatches.length===0){info.textContent='0';return;}
+
+  if(escMatches.length===0){info.textContent='0 résultat';return;}
   escMatchIdx=(escMatchIdx+dir+escMatches.length)%escMatches.length;
   info.textContent=(escMatchIdx+1)+'/'+escMatches.length;
+
   const pg=escMatches[escMatchIdx];
   const el=document.getElementById('esc-p-'+pg);
   if(el){
     el.scrollIntoView({behavior:'smooth',block:'start'});
-    // Forcer le rendu si pas encore fait
     if(!escRenderedPages[pg])await escRenderPage(pg,el);
+    else escDrawHighlights(pg);
   }
 }
 
