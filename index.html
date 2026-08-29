@@ -55,6 +55,9 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .sb-btn { background:rgba(255,255,255,.06); border:none; border-radius:6px; width:26px; height:26px; cursor:pointer; color:var(--gray); display:flex; align-items:center; justify-content:center; font-size:12px; }
 .page { display:none; padding:16px 16px 100px; max-width:700px; margin:0 auto; }
 .page.active { display:block; }
+/* Escoffier PDF viewer – full-screen fixed layout pour que l'iframe soit scrollable */
+#page-escoffier { padding:0 !important; max-width:none !important; margin:0 !important; }
+#page-escoffier.active { display:flex !important; flex-direction:column; position:fixed; top:52px; bottom:0; left:0; right:0; overflow:hidden; z-index:150; background:var(--dark); }
 .hero { text-align:center; padding:24px 0 20px; }
 .hero-icon { font-size:48px; }
 .hero h1 { font-family:'Playfair Display',serif; font-size:28px; color:var(--dark); margin:6px 0 4px; }
@@ -524,8 +527,8 @@ textarea.form-input { resize:vertical; line-height:1.6; }
     <div style="font-size:11px;color:var(--gray);">Le fichier reste sur votre Mac · aucun envoi réseau</div>
   </div>
   <!-- Visualiseur PDF -->
-  <div id="escoffier-viewer" style="display:none;flex-direction:column;height:calc(100vh - 112px);">
-    <iframe id="escoffier-iframe" style="flex:1;width:100%;border:none;min-height:calc(100vh - 112px);" src="about:blank"></iframe>
+  <div id="escoffier-viewer" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+    <iframe id="escoffier-iframe" style="flex:1;width:100%;height:100%;border:none;" src="about:blank"></iframe>
   </div>
 </div>
 
@@ -1561,7 +1564,11 @@ function openEscoffierFile(input){
   const iframe=document.getElementById('escoffier-iframe');
   iframe.src=escoffierBlobUrl;
   document.getElementById('escoffier-picker').style.display='none';
-  document.getElementById('escoffier-viewer').style.display='flex';
+  const viewer=document.getElementById('escoffier-viewer');
+  viewer.style.display='flex';
+  viewer.style.flex='1';
+  viewer.style.overflow='hidden';
+  viewer.style.flexDirection='column';
   document.getElementById('escoffier-filename').textContent=file.name;
 }
 function escoffierSearch(){
