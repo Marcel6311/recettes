@@ -55,9 +55,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--te
 .sb-btn { background:rgba(255,255,255,.06); border:none; border-radius:6px; width:26px; height:26px; cursor:pointer; color:var(--gray); display:flex; align-items:center; justify-content:center; font-size:12px; }
 .page { display:none; padding:16px 16px 100px; max-width:700px; margin:0 auto; }
 .page.active { display:block; }
-/* Escoffier PDF viewer – full-screen fixed layout pour que l'iframe soit scrollable */
-#page-escoffier { padding:0 !important; max-width:none !important; margin:0 !important; }
-#page-escoffier.active { display:flex !important; flex-direction:column; position:fixed; top:52px; bottom:0; left:0; right:0; overflow:hidden; z-index:150; background:var(--dark); }
 .hero { text-align:center; padding:24px 0 20px; }
 .hero-icon { font-size:48px; }
 .hero h1 { font-family:'Playfair Display',serif; font-size:28px; color:var(--dark); margin:6px 0 4px; }
@@ -501,34 +498,44 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 </div>
 
 <!-- ════════ RECETTES AUGUST ESCOFFIER ════════ -->
-<div class="page" id="page-escoffier" style="padding:0;">
-  <div style="position:sticky;top:52px;z-index:100;background:var(--dark);padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1);">
-    <button onclick="goTo('classeur')" style="background:none;border:none;color:var(--wheat);font-size:22px;cursor:pointer;padding:0 4px;line-height:1;">←</button>
-    <span id="escoffier-filename" style="color:var(--wheat);font-size:13px;font-family:'DM Sans',sans-serif;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Recettes August Escoffier</span>
-    <div style="display:flex;gap:6px;align-items:center;">
-      <input id="escoffier-search-input" type="search" placeholder="Rechercher…" autocomplete="off"
-        style="padding:7px 10px;border:1.5px solid rgba(255,255,255,.2);border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;background:rgba(255,255,255,.08);color:var(--wheat);width:150px;outline:none;"
-        onkeydown="if(event.key==='Enter')escoffierSearch()">
-      <button onclick="escoffierSearch()" style="background:var(--caramel);border:none;color:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">🔍</button>
-    </div>
+<div class="page" id="page-escoffier">
+  <div class="hero">
+    <div class="hero-icon">👨‍🍳</div>
+    <h1>August Escoffier</h1>
+    <p>Guide Culinaire · 817 pages</p>
   </div>
-  <!-- Sélecteur de fichier -->
-  <div id="escoffier-picker" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:32px;text-align:center;gap:20px;">
-    <div style="font-size:64px;">👨‍🍳</div>
-    <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--dark);">Recettes August Escoffier</div>
-    <div style="font-size:14px;color:var(--gray);max-width:300px;line-height:1.6;">
-      Sélectionnez le fichier PDF pour l'ouvrir dans le visualiseur intégré.<br>
-      Utilisez <strong>⌘F</strong> pour rechercher dans le PDF.
+
+  <!-- Sélecteur / état initial -->
+  <div id="escoffier-picker" style="display:flex;flex-direction:column;gap:16px;">
+    <div style="background:var(--parchment);border:1px solid var(--wheat);border-radius:14px;padding:20px 18px;font-size:14px;color:var(--gray);line-height:1.7;">
+      Le PDF reste <strong>sur votre Mac</strong> — aucun envoi réseau.<br>
+      Il s'ouvrira dans un <strong>nouvel onglet Safari</strong> avec toutes les 817 pages accessibles et la recherche ⌘F intégrée.
     </div>
-    <label style="background:var(--caramel);color:#fff;border-radius:12px;padding:14px 24px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;display:inline-block;">
-      📂 Ouvrir le PDF
+    <label style="display:flex;align-items:center;justify-content:center;gap:10px;background:var(--caramel);color:#fff;border-radius:14px;padding:16px 24px;font-size:16px;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;">
+      📂 Sélectionner le PDF Escoffier
       <input type="file" accept="application/pdf" onchange="openEscoffierFile(this)" style="display:none;">
     </label>
-    <div style="font-size:11px;color:var(--gray);">Le fichier reste sur votre Mac · aucun envoi réseau</div>
   </div>
-  <!-- Visualiseur PDF -->
-  <div id="escoffier-viewer" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
-    <iframe id="escoffier-iframe" style="flex:1;width:100%;height:100%;border:none;" src="about:blank"></iframe>
+
+  <!-- État après sélection -->
+  <div id="escoffier-viewer" style="display:none;flex-direction:column;gap:16px;">
+    <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:14px;padding:18px 16px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:28px;">✅</span>
+      <div>
+        <div style="font-weight:700;font-size:15px;color:#1b5e20;">PDF ouvert dans Safari</div>
+        <div id="escoffier-filename" style="font-size:12px;color:#2e7d32;margin-top:2px;">—</div>
+      </div>
+    </div>
+    <button onclick="escoffierReopen()" style="background:var(--caramel);color:#fff;border:none;border-radius:14px;padding:15px 24px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;width:100%;">
+      🔁 Ré-ouvrir dans Safari
+    </button>
+    <label style="display:flex;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.06);color:var(--dark);border:1.5px dashed var(--wheat);border-radius:14px;padding:14px 24px;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;">
+      📂 Changer de fichier
+      <input type="file" accept="application/pdf" onchange="openEscoffierFile(this)" style="display:none;">
+    </label>
+    <div style="font-size:12px;color:var(--gray);text-align:center;line-height:1.6;">
+      Dans Safari : utilisez <strong>⌘F</strong> pour rechercher<br>et les flèches du clavier pour naviguer entre les pages.
+    </div>
   </div>
 </div>
 
@@ -1554,30 +1561,22 @@ PAGE_TITLES['fiches']='📄 Fiches Richemont';
 PAGE_TITLES['fiche-view']='';
 PAGE_TITLES['escoffier']='📖 Recettes August Escoffier';
 
-// ─── Escoffier PDF viewer ────────────────────────────────────────────
+// ─── Escoffier PDF viewer ─────────────────────────────────────────────
 let escoffierBlobUrl=null;
 function openEscoffierFile(input){
   const file=input.files[0];
   if(!file)return;
   if(escoffierBlobUrl)URL.revokeObjectURL(escoffierBlobUrl);
   escoffierBlobUrl=URL.createObjectURL(file);
-  const iframe=document.getElementById('escoffier-iframe');
-  iframe.src=escoffierBlobUrl;
+  // Ouvrir dans un onglet natif Safari → toutes les 817 pages + ⌘F natif
+  window.open(escoffierBlobUrl,'_blank');
   document.getElementById('escoffier-picker').style.display='none';
   const viewer=document.getElementById('escoffier-viewer');
   viewer.style.display='flex';
-  viewer.style.flex='1';
-  viewer.style.overflow='hidden';
-  viewer.style.flexDirection='column';
   document.getElementById('escoffier-filename').textContent=file.name;
 }
-function escoffierSearch(){
-  const q=document.getElementById('escoffier-search-input').value.trim();
-  if(!q)return;
-  const iframe=document.getElementById('escoffier-iframe');
-  // Tenter window.find dans le contexte du navigateur (fonctionne en local)
-  try{iframe.contentWindow.find(q,false,false,true,false,true,false);}
-  catch(e){alert('Recherche : '+q+'\n\nUtilisez ⌘F dans le visualiseur PDF pour rechercher ce terme.');}
+function escoffierReopen(){
+  if(escoffierBlobUrl)window.open(escoffierBlobUrl,'_blank');
 }
 
 // Peupler le filtre groupe des coûts
