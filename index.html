@@ -430,7 +430,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
         <div class="cl-card-title">Fiches Richemont</div>
         <div class="cl-card-desc">Recettes de fabrication externes</div>
       </div>
-      <div class="cl-card-count" id="fiches-count">125</div>
+      <div class="cl-card-count" id="fiches-count">0</div>
     </div>
     <div class="cl-card" onclick="goTo('escoffier')">
       <div class="cl-card-icon">👨‍🍳</div>
@@ -643,6 +643,8 @@ async function init(){
   const syncDot=document.getElementById('sync-dot');
   if(syncTxt)syncTxt.textContent=fichesOk?fichesN+' fiches Richemont chargées':'fiches.json introuvable — utiliser 🔄 dans les Fiches';
   if(syncDot)syncDot.className='sync-dot '+(fichesOk?'ok':'err');
+  const fichesCountEl=document.getElementById('fiches-count');
+  if(fichesCountEl)fichesCountEl.textContent=fichesN;
   renderHome();renderList();goTo('home');
   if(recipes.length===0){
     document.getElementById('migrate-banner').style.display='block';
