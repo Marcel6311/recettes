@@ -739,8 +739,7 @@ function importFichesJSON(event){
       // Mettre à jour FICHES_DATA en place
       Object.keys(FICHES_DATA).forEach(k=>delete FICHES_DATA[k]);
       Object.assign(FICHES_DATA,data);
-      // Sauvegarder en localStorage pour rechargements futurs (usage local file://)
-      try{localStorage.setItem(FICHES_CACHE_KEY,JSON.stringify(data));}catch(e){}
+      saveFichesCache(data);
       renderFiches();
       notify('✓ '+n+' fiche'+(n>1?'s':'')+' Richemont importée'+(n>1?'s':'')+' !');
     }catch(err){
@@ -1554,29 +1553,12 @@ const CL_DATA={"couts":[{"no":"2009","nom":"Cakes (mini cake)","groupe":"Cakes",
 
 const FICHES_DATA={}
 const FICHES_CACHE_KEY='fiches-rc-v3';
+function saveFichesCache(data){try{localStorage.setItem(FICHES_CACHE_KEY,JSON.stringify(data));}catch(e){}}
 async function loadFichesData(){
-  // Fetch en premier (toujours la version correcte), localStorage si fetch impossible
+  // Même mécanisme que les archives : localStorage uniquement, instantané, persiste des semaines
   try{
-    const res=await fetch('fiches.json',{cache:'no-cache'});
-    if(res.ok){
-      const data=await res.json();
-      if(typeof data==='object'&&!Array.isArray(data)&&Object.keys(data).length>0){
-        Object.assign(FICHES_DATA,data);
-        try{localStorage.setItem(FICHES_CACHE_KEY,JSON.stringify(data));}catch(e){}
-        return true;
-      }
-    }
-  }catch(e){}
-  // Fetch impossible (offline / file://) → localStorage
-  try{
-    const cached=localStorage.getItem(FICHES_CACHE_KEY);
-    if(cached){
-      const data=JSON.parse(cached);
-      if(typeof data==='object'&&Object.keys(data).length>0){
-        Object.assign(FICHES_DATA,data);
-        return true;
-      }
-    }
+    const d=localStorage.getItem(FICHES_CACHE_KEY);
+    if(d){const data=JSON.parse(d);if(typeof data==='object'&&Object.keys(data).length>0){Object.assign(FICHES_DATA,data);return true;}}
   }catch(e){}
   return false;
 }
