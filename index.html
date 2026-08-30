@@ -286,16 +286,9 @@ textarea.form-input { resize:vertical; line-height:1.6; }
     Aucune recette.<br><br>
     <button class="tb-btn accent" onclick="newRecipe()" style="font-size:15px;padding:10px 20px;">＋ Créer ma première recette</button>
     <br><br>
-    <button class="tb-btn" onclick="migrateFromSupabase()" style="font-size:15px;padding:10px 20px;background:var(--brown);">📥 Récupérer depuis Supabase</button>
-    <br><br>
     <button class="tb-btn" onclick="document.getElementById('import-file').click()" style="font-size:15px;padding:10px 20px;background:var(--green);">📂 Importer fichier JSON</button>
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)">
     <input type="file" id="import-fiches-file" accept=".json" style="display:none" onchange="importFichesJSON(event)">
-  </div>
-  <div id="migrate-banner" style="display:none;background:var(--parchment);border:1.5px solid var(--caramel);border-radius:12px;padding:14px 16px;margin-top:16px;text-align:center">
-    <div style="font-weight:700;color:var(--brown);margin-bottom:8px">📥 Récupérer mes recettes</div>
-    <div style="font-size:13px;color:var(--gray);margin-bottom:12px">Appuie pour importer toutes tes recettes.</div>
-    <button class="tb-btn accent" onclick="migrateFromSupabase()" style="width:100%;padding:12px">Importer maintenant</button>
   </div>
 </div>
 <div class="page" id="page-list">
@@ -640,41 +633,17 @@ async function init(){
   const fichesN=Object.keys(FICHES_DATA).length;
   const syncTxt=document.getElementById('sync-text');
   const syncDot=document.getElementById('sync-dot');
-  if(syncTxt)syncTxt.textContent=fichesOk?fichesN+' fiches Richemont chargées':'fiches.json introuvable — utiliser 🔄 dans les Fiches';
+  if(syncTxt)syncTxt.textContent=fichesOk?fichesN+' fiches Richemont chargées':'Fiches non chargées — importer fiches.json via 📂';
   if(syncDot)syncDot.className='sync-dot '+(fichesOk?'ok':'err');
   const fichesCountEl=document.getElementById('fiches-count');
   if(fichesCountEl)fichesCountEl.textContent=fichesN;
   renderHome();renderList();goTo('home');
-  if(recipes.length===0){
-    document.getElementById('migrate-banner').style.display='block';
-  }
-}
-
-async function migrateFromSupabase(){
-  const SUPA_URL='https://bcekjclnhehvzarvybxd.supabase.co';
-  const SUPA_KEY='sb_publishable_VJCEE2irWvslY2nXX4jTqQ_WZ_Cbq63';
-  notify('Importation en cours…');
-  try{
-    const res=await fetch(SUPA_URL+'/rest/v1/recettes?select=*&order=updated_at.desc',{
-      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
-    });
-    if(!res.ok)throw new Error('Erreur '+res.status);
-    const data=await res.json();
-    if(!data.length){notify('Aucune recette trouvée.',true);return;}
-    recipes=data.map(r=>({id:r.id,name:r.nom,cat:r.categorie||'',notes:r.notes||'',ings:r.ingredients||[]}));
-    saveToStorage(recipes);
-    document.getElementById('migrate-banner').style.display='none';
-    renderHome();renderList();
-    notify('✓ '+recipes.length+' recette'+(recipes.length>1?'s':'')+' importée'+(recipes.length>1?'s':'')+' !');
-  }catch(e){
-    notify('Erreur : '+e.message,true);
-  }
 }
 
 const PAGES=['home','list','view','edit','calc','search','manage','archives'];
 const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur',search:'🔍 Recherche',manage:'⚙️ Gérer les ingrédients',archives:'🗂️ Archives historiques'};
 function goTo(name){PAGES.forEach(p=>{document.getElementById('page-'+p).classList.toggle('active',p===name);const bn=document.getElementById('bn-'+p);if(bn)bn.classList.toggle('on',p===name);});document.getElementById('topbar-title').textContent=PAGE_TITLES[name]||PAGE_TITLES.home;renderTopbarActions(name);window.scrollTo(0,0);}
-function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:4px" title="Exporter">💾</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:4px" title="Nouvelle recette">＋</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()" style="margin-right:4px" title="Importer">📂</button><button class="tb-btn" onclick="goTo(\'manage\');renderManage()" style="margin-right:4px" title="Gérer ingrédients">⚙️</button><button class="tb-btn" onclick="openSidebar()" title="Index">☰</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId){const isArch=!!loadArchives().find(x=>x.id===currentId);if(isArch){el.innerHTML='<button class="tb-btn" onclick="editArchive(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalcArchive(currentId)">🧮 Calculer</button>';}else{el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';}}if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId)el.innerHTML='<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';if(page==='rview'&&currentRview)el.innerHTML='<button class="tb-btn" onclick="toggleRviewCalc()" style="margin-right:4px">🧮 Calculer</button><button class="tb-btn green-btn" onclick="printRviewRecipe()">🖨️ Imprimer</button>';if(page==='fiches')el.innerHTML='<button class="tb-btn" onclick="reloadFichesData()" style="margin-right:4px" title="Recharger depuis fiches.json">🔄</button><button class="tb-btn" onclick="exportFichesJSON()" style="margin-right:4px" title="Exporter fiches.json">💾</button><button class="tb-btn" onclick="document.getElementById(\'import-fiches-file\').click()" style="margin-right:4px" title="Importer fiches.json">📂</button>';}
+function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:4px" title="Exporter">💾</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:4px" title="Nouvelle recette">＋</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()" style="margin-right:4px" title="Importer">📂</button><button class="tb-btn" onclick="goTo(\'manage\');renderManage()" style="margin-right:4px" title="Gérer ingrédients">⚙️</button><button class="tb-btn" onclick="openSidebar()" title="Index">☰</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId){const isArch=!!loadArchives().find(x=>x.id===currentId);if(isArch){el.innerHTML='<button class="tb-btn" onclick="editArchive(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalcArchive(currentId)">🧮 Calculer</button>';}else{el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';}}if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId)el.innerHTML='<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';if(page==='rview'&&currentRview)el.innerHTML='<button class="tb-btn" onclick="toggleRviewCalc()" style="margin-right:4px">🧮 Calculer</button><button class="tb-btn green-btn" onclick="printRviewRecipe()">🖨️ Imprimer</button>';if(page==='fiches')el.innerHTML='<button class="tb-btn" onclick="exportFichesJSON()" style="margin-right:4px" title="Exporter fiches.json">💾</button><button class="tb-btn" onclick="document.getElementById(\'import-fiches-file\').click()" style="margin-right:4px" title="Importer fiches.json">📂</button>';}
 function exportJSON(){
   const data=JSON.stringify(recipes,null,2);
   const blob=new Blob([data],{type:'application/json'});
@@ -1570,22 +1539,6 @@ PAGE_TITLES['couts']='💰 Tableau des coûts';
 PAGE_TITLES['sf-index']='🔗 Index semi-fabriqués';
 PAGE_TITLES['mp']='🧂 Matières premières';
 PAGE_TITLES['rview']='';let currentRview=null;let currentRviewList=[];let currentRviewIdx=-1;
-async function reloadFichesData(){
-  const syncTxt=document.getElementById('sync-text');
-  const syncDot=document.getElementById('sync-dot');
-  if(syncTxt)syncTxt.textContent='Rechargement des fiches…';
-  if(syncDot){syncDot.className='sync-dot loading';}
-  // Vider le cache localStorage pour forcer le rechargement
-  try{localStorage.removeItem(FICHES_CACHE_KEY);}catch(e){}
-  // Vider FICHES_DATA
-  Object.keys(FICHES_DATA).forEach(k=>delete FICHES_DATA[k]);
-  const ok=await loadFichesData();
-  const n=Object.keys(FICHES_DATA).length;
-  if(syncTxt)syncTxt.textContent=ok?n+' fiches chargées':'Erreur chargement fiches.json';
-  if(syncDot)syncDot.className='sync-dot '+(ok?'ok':'err');
-  if(ok){renderFichesList();renderFichesHome();}
-  else{alert('Impossible de charger fiches.json. Vérifiez que le fichier est dans le même dossier que index11.html.');}
-}
 PAGE_TITLES['fiches']='📄 Fiches Richemont';
 PAGE_TITLES['fiche-view']='';
 PAGE_TITLES['escoffier']='📖 Recettes August Escoffier';
