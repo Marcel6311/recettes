@@ -1547,25 +1547,25 @@ const CL_DATA={"couts":[{"no":"2009","nom":"Cakes (mini cake)","groupe":"Cakes",
 const FICHES_DATA={}
 const FICHES_STORAGE_KEY='fiches_richemont_v1';
 async function loadFichesData(){
-  // 1. Essayer localStorage d'abord (chargement instantané)
+  // 1. Toujours essayer fetch('fiches.json') en priorité (cache:no-store pour éviter le cache navigateur)
+  try{
+    const res=await fetch('fiches.json?_='+Date.now(),{cache:'no-store'});
+    if(res.ok){
+      const data=await res.json();
+      if(typeof data==='object'&&!Array.isArray(data)&&Object.keys(data).length>0){
+        Object.assign(FICHES_DATA,data);
+        try{localStorage.setItem(FICHES_STORAGE_KEY,JSON.stringify(data));}catch(e){}
+        return true;
+      }
+    }
+  }catch(e){}
+  // 2. Fallback localStorage (mode hors ligne)
   try{
     const stored=localStorage.getItem(FICHES_STORAGE_KEY);
     if(stored){
       const parsed=JSON.parse(stored);
       if(Object.keys(parsed).length>0){
         Object.assign(FICHES_DATA,parsed);
-        return true;
-      }
-    }
-  }catch(e){}
-  // 2. Essayer fetch('fiches.json') depuis le même dossier
-  try{
-    const res=await fetch('fiches.json');
-    if(res.ok){
-      const data=await res.json();
-      if(typeof data==='object'&&!Array.isArray(data)&&Object.keys(data).length>0){
-        Object.assign(FICHES_DATA,data);
-        try{localStorage.setItem(FICHES_STORAGE_KEY,JSON.stringify(data));}catch(e){}
         return true;
       }
     }
