@@ -248,7 +248,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .rv-ing-n{flex:1;color:var(--dark);}
 .rv-ing-pct{min-width:36px;text-align:right;font-size:11px;color:var(--gray);flex-shrink:0;}
 </style>
-<script src="fiches.js?v=183" onerror="window.FICHES_JSON_DATA=null"></script>
+<script src="fiches.js?v=184" onerror="window.FICHES_JSON_DATA=null"></script>
 </head>
 <body>
 <div id="print-zone">
@@ -2002,7 +2002,14 @@ function applyFicheTarget(){
   const inp=document.getElementById('fv-target');
   if(!inp)return;
   const v=parseFloat(inp.value);
-  _ficheViewTargetG=(v>0)?v:null;
+  if(!(v>0)){
+    inp.style.borderColor='var(--caramel)';
+    inp.style.boxShadow='0 0 0 2px rgba(196,154,60,.5)';
+    inp.focus();
+    setTimeout(()=>{inp.style.borderColor='';inp.style.boxShadow='';},2000);
+    return;
+  }
+  _ficheViewTargetG=v;
   _renderFicheViewContent();
 }
 
