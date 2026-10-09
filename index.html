@@ -248,7 +248,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .rv-ing-n{flex:1;color:var(--dark);}
 .rv-ing-pct{min-width:36px;text-align:right;font-size:11px;color:var(--gray);flex-shrink:0;}
 </style>
-<script src="fiches.js?v=184" onerror="window.FICHES_JSON_DATA=null"></script>
+<script src="fiches.js?v=185" onerror="window.FICHES_JSON_DATA=null"></script>
 </head>
 <body>
 <div id="print-zone">
@@ -2107,9 +2107,9 @@ function _renderFicheViewContent(){
       +'<span style="font-size:11px;color:var(--gray);font-weight:700;letter-spacing:.05em;text-transform:uppercase">Base</span>'
       +'<span style="font-size:16px;font-weight:700;color:var(--wheat);font-family:\'DM Mono\',monospace">'+baseTotal+'g</span>'
       +'<span style="font-size:14px;color:var(--gray);margin:0 2px">→</span>'
-      +'<span style="font-size:11px;color:var(--gray);font-weight:700;letter-spacing:.05em;text-transform:uppercase">Cible</span>'
+      +'<span style="font-size:11px;color:var(--wheat);font-weight:700;letter-spacing:.05em;text-transform:uppercase">→ Tapez votre cible :</span>'
       +'<input id="fv-target" type="number" min="1" max="99999"'
-      +' placeholder="'+baseTotal+'"'
+      +' placeholder="Nouveau poids"'
       +(_ficheViewTargetG?' value="'+_ficheViewTargetG+'"':'')
       +' onkeydown="if(event.key===\'Enter\')applyFicheTarget()"'
       +' style="width:78px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:var(--wheat);font-size:16px;font-family:\'DM Mono\',monospace;text-align:right">'
