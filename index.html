@@ -248,7 +248,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .rv-ing-n{flex:1;color:var(--dark);}
 .rv-ing-pct{min-width:36px;text-align:right;font-size:11px;color:var(--gray);flex-shrink:0;}
 </style>
-<script src="fiches.js?v=186" onerror="window.FICHES_JSON_DATA=null"></script>
+<script src="fiches.js?v=187" onerror="window.FICHES_JSON_DATA=null"></script>
 </head>
 <body>
 <div id="print-zone">
@@ -1273,8 +1273,12 @@ function renderQuickBtns(r){
       return'<button class="qbtn" onclick="setTarget('+p+')">'+p+' pers.</button>';
     }).join('');
   }else{
-    document.getElementById('quick-btns').innerHTML=[0.5,1,2,3,5].map(m=>'<button class="qbtn" onclick="setTarget('+(tot*m).toFixed(0)+')">'+(tot*m).toFixed(0)+' g</button>').join('');
-  }
+    _ficheTotCalc=tot;
+  document.getElementById('quick-btns').innerHTML='<div style="display:flex;flex-wrap:wrap;gap:6px;">'+[5,4,3,2].map(n=>'<button class="qbtn" onclick="setTarget('+Math.round(tot/n)+')" title="Diviser par '+n+'">÷'+n+'</button>').join('')+'<button class="qbtn on" onclick="setTarget('+Math.round(tot)+')" title="Recette de base">×1</button>'+[2,3,5].map(n=>'<button class="qbtn" onclick="setTarget('+Math.round(tot*n)+')" title="Multiplier par '+n+'">×'+n+'</button>').join('')+'</div><div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--parchment);border-radius:10px;border:1.5px solid var(--wheat);"><span style="font-size:13px;color:var(--brown);font-weight:700;white-space:nowrap;">÷ Diviser par</span><input type="number" id="fiche-div-input" min="1" max="9999" placeholder="ex: 3" onkeydown="if(event.key===\'Enter\')setFicheDiviseur()" style="width:72px;padding:6px 8px;border-radius:8px;border:1.5px solid var(--wheat);background:#fff;color:var(--brown);font-size:16px;font-family:\'DM Mono\',monospace;text-align:right;"><button onclick="setFicheDiviseur()" style="padding:7px 14px;border-radius:20px;border:none;background:var(--caramel);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Diviser</button></div>'
+  document.getElementById('tot-base').textContent=calcMixed?'(mixte)':tot.toFixed(1)+' g';
+  document.getElementById('tot-result').textContent='—';
+  renderResultRows(r,null);
+  goTo('calc');
 }
 function showCalc(id,fromArchive=false,archiveRecipe=null){
   let r=archiveRecipe||recipes.find(x=>x.id===id);
@@ -1984,6 +1988,7 @@ function renderFiches(){
 // ─── Fiche view : calculatrice par poids cible + impression ──────────────────
 let _ficheViewData=null,_ficheViewTargetG=null;
 let _ficheCalcRecipe=null;
+let _ficheTotCalc=0;
 
 function showFicheView(f){
   _ficheViewData=f;
@@ -2093,6 +2098,14 @@ function _fmtQ(base,scale){
   return v.toFixed(1);
 }
 
+function setFicheDiviseur(){
+  const inp=document.getElementById('fiche-div-input');
+  if(!inp)return;
+  const n=parseFloat(inp.value);
+  if(!(n>0)){inp.style.borderColor='var(--caramel)';inp.focus();setTimeout(()=>{inp.style.borderColor='';},1500);return;}
+  setTarget(Math.round(_ficheTotCalc/n));
+}
+
 function showFicheCalc(f){
   if(!f)return;
   const allIngs=[];
@@ -2114,8 +2127,17 @@ function showFicheCalc(f){
   document.getElementById('calc-target').value='';
   document.getElementById('factor-pill').style.display='none';
   document.getElementById('result-table').style.display='none';
-  document.getElementById('result-head-3').textContent='Calculé';
-  document.getElementById('quick-btns').innerHTML=[0.5,1,2,3,5].map(m=>'<button class="qbtn" onclick="setTarget('+Math.round(tot*m)+')">'+(Math.round(tot*m))+' g</button>').join('');
+  document.getElementById('result-head-3').textContent='Calculé';_ficheTotCalc=tot;
+  document.getElementById('quick-btns').innerHTML='<div style="display:flex;flex-wrap:wrap;gap:6px;">'
+    +[5,4,3,2].map(n=>'<button class="qbtn" onclick="setTarget('+Math.round(tot/n)+')" title="Diviser par '+n+'">÷'+n+'</button>').join('')
+    +'<button class="qbtn on" onclick="setTarget('+Math.round(tot)+')" title="Recette de base">×1</button>'
+    +[2,3,5].map(n=>'<button class="qbtn" onclick="setTarget('+Math.round(tot*n)+')" title="Multiplier par '+n+'">×'+n+'</button>').join('')
+    +'</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--parchment);border-radius:10px;border:1.5px solid var(--wheat);">'
+    +'<span style="font-size:13px;color:var(--brown);font-weight:700;white-space:nowrap;">÷ Diviser par</span>'
+    +'<input type="number" id="fiche-div-input" min="1" max="9999" placeholder="ex: 3" onkeydown="if(event.key===\'Enter\')setFicheDiviseur()" style="width:72px;padding:6px 8px;border-radius:8px;border:1.5px solid var(--wheat);background:#fff;color:var(--brown);font-size:16px;font-family:\'DM Mono\',monospace;text-align:right;">'
+    +'<button onclick="setFicheDiviseur()" style="padding:7px 14px;border-radius:20px;border:none;background:var(--caramel);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Diviser</button>'
+    +'</div>'
   document.getElementById('tot-base').textContent=tot.toFixed(0)+' g';
   document.getElementById('tot-result').textContent='—';
   renderResultRows(_ficheCalcRecipe,null);
