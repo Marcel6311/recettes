@@ -248,7 +248,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .rv-ing-n{flex:1;color:var(--dark);}
 .rv-ing-pct{min-width:36px;text-align:right;font-size:11px;color:var(--gray);flex-shrink:0;}
 </style>
-<script src="fiches.js?v=185" onerror="window.FICHES_JSON_DATA=null"></script>
+<script src="fiches.js?v=186" onerror="window.FICHES_JSON_DATA=null"></script>
 </head>
 <body>
 <div id="print-zone">
@@ -643,7 +643,7 @@ async function init(){
 const PAGES=['home','list','view','edit','calc','search','manage','archives'];
 const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur',search:'🔍 Recherche',manage:'⚙️ Gérer les ingrédients',archives:'🗂️ Archives historiques'};
 function goTo(name){PAGES.forEach(p=>{document.getElementById('page-'+p).classList.toggle('active',p===name);const bn=document.getElementById('bn-'+p);if(bn)bn.classList.toggle('on',p===name);});document.getElementById('topbar-title').textContent=PAGE_TITLES[name]||PAGE_TITLES.home;renderTopbarActions(name);window.scrollTo(0,0);}
-function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:4px" title="Exporter">💾</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:4px" title="Nouvelle recette">＋</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()" style="margin-right:4px" title="Importer">📂</button><button class="tb-btn" onclick="goTo(\'manage\');renderManage()" style="margin-right:4px" title="Gérer ingrédients">⚙️</button><button class="tb-btn" onclick="openSidebar()" title="Index">☰</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId){const isArch=!!loadArchives().find(x=>x.id===currentId);if(isArch){el.innerHTML='<button class="tb-btn" onclick="editArchive(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalcArchive(currentId)">🧮 Calculer</button>';}else{el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';}}if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId)el.innerHTML='<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';if(page==='rview'&&currentRview)el.innerHTML='<button class="tb-btn" onclick="toggleRviewCalc()" style="margin-right:4px">🧮 Calculer</button><button class="tb-btn green-btn" onclick="printRviewRecipe()">🖨️ Imprimer</button>';if(page==='fiches')el.innerHTML='<button class="tb-btn" onclick="exportFichesJSON()" style="margin-right:4px" title="Exporter fiches.json">💾</button><button class="tb-btn" onclick="document.getElementById(\'import-fiches-file\').click()" style="margin-right:4px" title="Importer fiches.json">📂</button>';}
+function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:4px" title="Exporter">💾</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:4px" title="Nouvelle recette">＋</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()" style="margin-right:4px" title="Importer">📂</button><button class="tb-btn" onclick="goTo(\'manage\');renderManage()" style="margin-right:4px" title="Gérer ingrédients">⚙️</button><button class="tb-btn" onclick="openSidebar()" title="Index">☰</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId){const isArch=!!loadArchives().find(x=>x.id===currentId);if(isArch){el.innerHTML='<button class="tb-btn" onclick="editArchive(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalcArchive(currentId)">🧮 Calculer</button>';}else{el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';}}if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId){const _fromFiche=_ficheCalcRecipe&&_ficheCalcRecipe.id===calcId;el.innerHTML=(_fromFiche?'<button class="tb-btn" onclick="showFicheView(_ficheViewData)" style="margin-right:4px">← Fiche</button>':'')+'<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';}if(page==='rview'&&currentRview)el.innerHTML='<button class="tb-btn" onclick="toggleRviewCalc()" style="margin-right:4px">🧮 Calculer</button><button class="tb-btn green-btn" onclick="printRviewRecipe()">🖨️ Imprimer</button>';if(page==='fiche-view'&&_ficheViewData){const _hasG=(_ficheViewData.groupes||[]).flatMap(g=>(g.ings||[])).some(i=>typeof i.q==='number'&&i.u==='g');el.innerHTML=(_hasG?'<button class="tb-btn" onclick="showFicheCalc(_ficheViewData)" style="margin-right:4px">🧮 Calculer</button>':'')+'<button class="tb-btn green-btn" onclick="_printFicheView()">🖨️ Imprimer</button>';}if(page==='fiches')el.innerHTML='<button class="tb-btn" onclick="exportFichesJSON()" style="margin-right:4px" title="Exporter fiches.json">💾</button><button class="tb-btn" onclick="document.getElementById(\'import-fiches-file\').click()" style="margin-right:4px" title="Importer fiches.json">📂</button>';}
 function exportJSON(){
   const data=JSON.stringify(recipes,null,2);
   const blob=new Blob([data],{type:'application/json'});
@@ -1316,7 +1316,7 @@ function showCalc(id,fromArchive=false,archiveRecipe=null){
 function setTarget(v){document.getElementById('calc-target').value=v;updateCalc();}
 function updateCalc(){
   const archives=loadArchives();
-  const r=recipes.find(x=>x.id===calcId)||archives.find(x=>x.id===calcId);
+  const r=(_ficheCalcRecipe&&_ficheCalcRecipe.id===calcId)?_ficheCalcRecipe:(recipes.find(x=>x.id===calcId)||archives.find(x=>x.id===calcId));
   if(!r)return;
   const tot=totalOf(r.ings);
   const val=parseFloat(document.getElementById('calc-target').value);
@@ -1345,7 +1345,7 @@ function updateCalc(){
   renderResultRows(r,factor);
 }
 function renderResultRows(r,factor){document.getElementById('result-rows').innerHTML=r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor!==null?base*factor:null,u=ing.u||'g';return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'<em style="color:var(--gray)">—</em>')+'</span><span class="c2">'+base.toFixed(1)+' '+u+'</span><span class="'+(calc!==null?'c3 hi':'c3')+'">'+(calc!==null?calc.toFixed(1)+' '+u:'—')+'</span></div>';}).join('');}
-function exportPDF(){const r=recipes.find(x=>x.id===calcId)||loadArchives().find(x=>x.id===calcId);if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),factor=(cible>0&&tot>0)?cible/tot:null,now=new Date();document.getElementById('pz-name').textContent=r.name;const sub=[];if(r.cat)sub.push(r.cat);sub.push('Base : '+tot.toFixed(1)+' g');if(factor)sub.push('→ Calculé pour : '+cible.toFixed(1)+' g');document.getElementById('pz-sub').textContent=sub.join(' · ');document.getElementById('pz-date').textContent='Imprimé le '+now.toLocaleDateString('fr-CH',{day:'2-digit',month:'long',year:'numeric'})+' à '+now.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'});document.getElementById('pz-table').innerHTML='<div class="result-table"><div class="result-head"><span>Ingrédient</span><span>Base (g)</span><span>'+(factor?'Pour '+cible.toFixed(0)+' g':'Base (g)')+'</span></div>'+r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor?base*factor:base,u=ing.u||'g';return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'—')+'</span><span class="c2">'+base.toFixed(1)+' '+u+'</span><span class="c3 hi">'+calc.toFixed(1)+' '+u+'</span></div>';}).join('')+'<div class="result-row tot-row"><span class="c1">TOTAL</span><span class="c2">'+tot.toFixed(1)+' g</span><span class="c3">'+(factor?cible.toFixed(1)+' g':tot.toFixed(1)+' g')+'</span></div></div>';const notesEl=document.getElementById('pz-notes');if(r.notes){notesEl.innerHTML='<div style="font-family:Playfair Display,serif;font-size:14px;font-weight:700;color:#7B4F2E;margin-bottom:8px;">Procédé</div>'+esc(r.notes);}else{notesEl.innerHTML='';}const old=document.title;document.title=r.name+(factor?' — '+cible.toFixed(0)+'g':'');window.print();document.title=old;}
+function exportPDF(){const r=(_ficheCalcRecipe&&_ficheCalcRecipe.id===calcId)?_ficheCalcRecipe:(recipes.find(x=>x.id===calcId)||loadArchives().find(x=>x.id===calcId));if(!r)return;const tot=totalOf(r.ings),cible=parseFloat(document.getElementById('calc-target').value),factor=(cible>0&&tot>0)?cible/tot:null,now=new Date();document.getElementById('pz-name').textContent=r.name;const sub=[];if(r.cat)sub.push(r.cat);sub.push('Base : '+tot.toFixed(1)+' g');if(factor)sub.push('→ Calculé pour : '+cible.toFixed(1)+' g');document.getElementById('pz-sub').textContent=sub.join(' · ');document.getElementById('pz-date').textContent='Imprimé le '+now.toLocaleDateString('fr-CH',{day:'2-digit',month:'long',year:'numeric'})+' à '+now.toLocaleTimeString('fr-CH',{hour:'2-digit',minute:'2-digit'});document.getElementById('pz-table').innerHTML='<div class="result-table"><div class="result-head"><span>Ingrédient</span><span>Base (g)</span><span>'+(factor?'Pour '+cible.toFixed(0)+' g':'Base (g)')+'</span></div>'+r.ings.map(ing=>{const base=parseFloat(ing.q)||0,calc=factor?base*factor:base,u=ing.u||'g';return'<div class="result-row"><span class="c1">'+(esc(ing.n)||'—')+'</span><span class="c2">'+base.toFixed(1)+' '+u+'</span><span class="c3 hi">'+calc.toFixed(1)+' '+u+'</span></div>';}).join('')+'<div class="result-row tot-row"><span class="c1">TOTAL</span><span class="c2">'+tot.toFixed(1)+' g</span><span class="c3">'+(factor?cible.toFixed(1)+' g':tot.toFixed(1)+' g')+'</span></div></div>';const notesEl=document.getElementById('pz-notes');if(r.notes){notesEl.innerHTML='<div style="font-family:Playfair Display,serif;font-size:14px;font-weight:700;color:#7B4F2E;margin-bottom:8px;">Procédé</div>'+esc(r.notes);}else{notesEl.innerHTML='';}const old=document.title;document.title=r.name+(factor?' — '+cible.toFixed(0)+'g':'');window.print();document.title=old;}
 function renderArchives(){
   const archives=loadArchives();
   const q=(document.getElementById('arch-search').value||'').trim().toLowerCase();
@@ -1983,10 +1983,12 @@ function renderFiches(){
 
 // ─── Fiche view : calculatrice par poids cible + impression ──────────────────
 let _ficheViewData=null,_ficheViewTargetG=null;
+let _ficheCalcRecipe=null;
 
 function showFicheView(f){
   _ficheViewData=f;
   _ficheViewTargetG=null;
+  _ficheCalcRecipe=null;
   _renderFicheViewContent();
   goTo('fiche-view');
 }
@@ -2091,6 +2093,36 @@ function _fmtQ(base,scale){
   return v.toFixed(1);
 }
 
+function showFicheCalc(f){
+  if(!f)return;
+  const allIngs=[];
+  (f.groupes||[]).forEach(g=>{
+    (g.ings||[]).forEach(i=>{
+      if(typeof i.q==='number')allIngs.push({n:(g.titre?'['+g.titre+'] ':'')+i.n,q:i.q,u:i.u||'g'});
+    });
+  });
+  if(!allIngs.length){notify('Aucun ingrédient avec quantité numérique.',true);return;}
+  _ficheCalcRecipe={id:f.id,name:f.nom,ings:allIngs,serves:null};
+  calcId=f.id;currentId=f.id;calcMode='g';calcFromArchive=false;calcMixed=false;
+  const tot=allIngs.filter(i=>i.u==='g').reduce((s,i)=>s+i.q,0);
+  document.getElementById('calc-name').textContent=f.nom;
+  document.getElementById('calc-meta').innerHTML='<span style="color:var(--caramel);font-weight:700">📄 Fiche '+esc(f.id)+'</span> · Base : <strong>'+tot.toFixed(0)+' g</strong>'+(f.rdt_desc?' · '+esc(f.rdt_desc):'')+' — '+allIngs.length+' ingrédient'+(allIngs.length!==1?'s':'');
+  document.getElementById('calc-label').textContent='Quantité totale souhaitée (grammes)';
+  document.getElementById('calc-unit').textContent='g';
+  document.getElementById('calc-target').placeholder='Saisir le grammage…';
+  document.getElementById('calc-mode-toggle').style.display='none';
+  document.getElementById('calc-target').value='';
+  document.getElementById('factor-pill').style.display='none';
+  document.getElementById('result-table').style.display='none';
+  document.getElementById('result-head-3').textContent='Calculé';
+  document.getElementById('quick-btns').innerHTML=[0.5,1,2,3,5].map(m=>'<button class="qbtn" onclick="setTarget('+Math.round(tot*m)+')">'+(Math.round(tot*m))+' g</button>').join('');
+  document.getElementById('tot-base').textContent=tot.toFixed(0)+' g';
+  document.getElementById('tot-result').textContent='—';
+  renderResultRows(_ficheCalcRecipe,null);
+  PAGE_TITLES['calc']='🧮 '+f.nom;
+  goTo('calc');
+}
+
 function _renderFicheViewContent(){
   const f=_ficheViewData;
   const groupes=f.groupes||[];
@@ -2101,28 +2133,7 @@ function _renderFicheViewContent(){
 
   let html='<div style="padding:12px 0 6px"><div class="rv-back" onclick="goTo(\'fiches\');renderFiches()">← Fiches Richemont</div></div>';
 
-  // Barre calculatrice
-  if(hasGrams){
-    html+='<div class="no-print" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 14px;background:var(--dark);border-radius:10px;margin-bottom:10px;">'
-      +'<span style="font-size:11px;color:var(--gray);font-weight:700;letter-spacing:.05em;text-transform:uppercase">Base</span>'
-      +'<span style="font-size:16px;font-weight:700;color:var(--wheat);font-family:\'DM Mono\',monospace">'+baseTotal+'g</span>'
-      +'<span style="font-size:14px;color:var(--gray);margin:0 2px">→</span>'
-      +'<span style="font-size:11px;color:var(--wheat);font-weight:700;letter-spacing:.05em;text-transform:uppercase">→ Tapez votre cible :</span>'
-      +'<input id="fv-target" type="number" min="1" max="99999"'
-      +' placeholder="Nouveau poids"'
-      +(_ficheViewTargetG?' value="'+_ficheViewTargetG+'"':'')
-      +' onkeydown="if(event.key===\'Enter\')applyFicheTarget()"'
-      +' style="width:78px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:var(--wheat);font-size:16px;font-family:\'DM Mono\',monospace;text-align:right">'
-      +'<span style="font-size:13px;color:var(--gray)">g</span>'
-      +'<button onclick="applyFicheTarget()" style="padding:7px 13px;border-radius:20px;border:none;background:var(--caramel);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em">Calculer</button>'
-      +(_ficheViewTargetG?'<button onclick="resetFicheTarget()" style="padding:7px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--gray);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">↺ Base</button>':'')
-      +'<button onclick="_printFicheView()" style="margin-left:auto;padding:7px 13px;border-radius:20px;border:none;background:rgba(255,255,255,.08);color:var(--wheat);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">🖨 Imprimer</button>'
-      +'</div>';
-  } else {
-    html+='<div class="no-print" style="display:flex;justify-content:flex-end;padding:6px 0 10px;">'
-      +'<button onclick="_printFicheView()" style="padding:7px 13px;border-radius:20px;border:none;background:var(--caramel);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🖨 Imprimer</button>'
-      +'</div>';
-  }
+  // Calculatrice et impression gérées via topbar (🧮 Calculer ouvre page-calc, 🖨️ dans topbar aussi)
 
   // En-tête
   const cibleLbl=_ficheViewTargetG?' <span style="color:var(--caramel);font-weight:700">(→ '+_ficheViewTargetG+'g)</span>':'';
