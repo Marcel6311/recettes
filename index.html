@@ -1482,6 +1482,10 @@ function openByNom(nom){
 function prevRview(){if(currentRviewIdx>0)showRview(currentRviewList[currentRviewIdx-1]);}
 function nextRview(){if(currentRviewIdx<currentRviewList.length-1)showRview(currentRviewList[currentRviewIdx+1]);}
 function getSfByIngName(ingName){
+  // Les ingrédients SF sont écrits "nom (no)" ex: "pâte danoise (450)"
+  const m=(ingName||'').match(/\((\d+)\)\s*$/);
+  if(m) return SF_DATA[m[1]]||null;
+  // Fallback : comparaison par nom exact
   const n=(ingName||'').toLowerCase().trim();
   return Object.values(SF_DATA).find(sf=>(sf.nom||'').toLowerCase().trim()===n)||null;
 }
