@@ -253,6 +253,7 @@ textarea.form-input { resize:vertical; line-height:1.6; }
 .rv-ing-pct{min-width:36px;text-align:right;font-size:11px;color:var(--gray);flex-shrink:0;}
 </style>
 <script src="fiches.js?v=189" onerror="window.FICHES_JSON_DATA=null"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 </head>
 <body>
 <div id="print-zone">
@@ -647,7 +648,7 @@ async function init(){
 const PAGES=['home','list','view','edit','calc','search','manage','archives'];
 const PAGE_TITLES={home:'🥐 Cahier de Recettes',list:'📖 Mes recettes',view:'',edit:'✏️ Éditeur',calc:'🧮 Calculateur',search:'🔍 Recherche',manage:'⚙️ Gérer les ingrédients',archives:'🗂️ Archives historiques'};
 function goTo(name){PAGES.forEach(p=>{document.getElementById('page-'+p).classList.toggle('active',p===name);const bn=document.getElementById('bn-'+p);if(bn)bn.classList.toggle('on',p===name);});document.getElementById('topbar-title').textContent=PAGE_TITLES[name]||PAGE_TITLES.home;renderTopbarActions(name);window.scrollTo(0,0);}
-function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:4px" title="Exporter">💾</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:4px" title="Nouvelle recette">＋</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()" style="margin-right:4px" title="Importer">📂</button><button class="tb-btn" onclick="goTo(\'manage\');renderManage()" style="margin-right:4px" title="Gérer ingrédients">⚙️</button><button class="tb-btn" onclick="openSidebar()" title="Index">☰</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId){const isArch=!!loadArchives().find(x=>x.id===currentId);if(isArch){el.innerHTML='<button class="tb-btn" onclick="editArchive(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalcArchive(currentId)">🧮 Calculer</button>';}else{el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';}}if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId){const _fromFiche=_ficheCalcRecipe&&_ficheCalcRecipe.id===calcId;el.innerHTML=(_fromFiche?'<button class="tb-btn" onclick="showFicheView(_ficheViewData)" style="margin-right:4px">← Fiche</button>':'')+'<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';}if(page==='rview'&&currentRview)el.innerHTML='<button class="tb-btn" onclick="toggleRviewCalc()" style="margin-right:4px">🧮 Calculer</button><button class="tb-btn green-btn" onclick="printRviewRecipe()">🖨️ Imprimer</button>';if(page==='fiche-view'&&_ficheViewData){const _hasG=(_ficheViewData.groupes||[]).flatMap(g=>(g.ings||[])).some(i=>typeof i.q==='number'&&i.u==='g');el.innerHTML=(_hasG?'<button class="tb-btn" onclick="showFicheCalc(_ficheViewData)" style="margin-right:4px">🧮 Calculer</button>':'')+'<button class="tb-btn green-btn" onclick="_printFicheView()">🖨️ Imprimer</button>';}if(page==='fiches')el.innerHTML='<button class="tb-btn" onclick="exportFichesJSON()" style="margin-right:4px" title="Exporter fiches.json">💾</button><button class="tb-btn" onclick="document.getElementById(\'import-fiches-file\').click()" style="margin-right:4px" title="Importer fiches.json">📂</button>';}
+function renderTopbarActions(page){const el=document.getElementById('topbar-actions');el.innerHTML='';if(page==='home')el.innerHTML='<button class="tb-btn" onclick="exportJSON()" style="margin-right:4px" title="Exporter">💾</button><button class="tb-btn accent" onclick="newRecipe()" style="margin-right:4px" title="Nouvelle recette">＋</button><button class="tb-btn" onclick="document.getElementById(\'import-file\').click()" style="margin-right:4px" title="Importer">📂</button><button class="tb-btn" onclick="goTo(\'manage\');renderManage()" style="margin-right:4px" title="Gérer ingrédients">⚙️</button><button class="tb-btn" onclick="openSidebar()" title="Index">☰</button>';if(page==='list')el.innerHTML='<button class="tb-btn accent" onclick="newRecipe()">＋ Nouvelle</button>';if(page==='view'&&currentId){const isArch=!!loadArchives().find(x=>x.id===currentId);if(isArch){el.innerHTML='<button class="tb-btn" onclick="editArchive(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalcArchive(currentId)">🧮 Calculer</button>';}else{el.innerHTML='<button class="tb-btn" onclick="editRecipe(currentId)" style="margin-right:6px">✏️</button><button class="tb-btn accent" onclick="showCalc(currentId)">🧮 Calculer</button>';}}if(page==='edit')el.innerHTML='<button class="tb-btn accent" onclick="saveRecipe()">💾 Sauvegarder</button>';if(page==='calc'&&currentId){const _fromFiche=_ficheCalcRecipe&&_ficheCalcRecipe.id===calcId;el.innerHTML=(_fromFiche?'<button class="tb-btn" onclick="showFicheView(_ficheViewData)" style="margin-right:4px">← Fiche</button>':'')+'<button class="tb-btn green-btn" onclick="exportPDF()">📄 PDF</button>';}if(page==='rview'&&currentRview)el.innerHTML='<button class="tb-btn" onclick="toggleRviewCalc()" style="margin-right:4px">🧮 Calculer</button><button class="tb-btn" onclick="partagerRview()" style="margin-right:4px">📤 Partager</button><button class="tb-btn green-btn" onclick="printRviewRecipe()">🖨️ Imprimer</button>';if(page==='fiche-view'&&_ficheViewData){const _hasG=(_ficheViewData.groupes||[]).flatMap(g=>(g.ings||[])).some(i=>typeof i.q==='number'&&i.u==='g');el.innerHTML=(_hasG?'<button class="tb-btn" onclick="showFicheCalc(_ficheViewData)" style="margin-right:4px">🧮 Calculer</button>':'')+'<button class="tb-btn" onclick="partagerFiche()" style="margin-right:4px">📤 Partager</button><button class="tb-btn green-btn" onclick="_printFicheView()">🖨️ Imprimer</button>';}if(page==='fiches')el.innerHTML='<button class="tb-btn" onclick="exportFichesJSON()" style="margin-right:4px" title="Exporter fiches.json">💾</button><button class="tb-btn" onclick="document.getElementById(\'import-fiches-file\').click()" style="margin-right:4px" title="Importer fiches.json">📂</button>';}
 function exportJSON(){
   const data=JSON.stringify(recipes,null,2);
   const blob=new Blob([data],{type:'application/json'});
@@ -1920,6 +1921,130 @@ function _updateRviewRows(f){
   const totEl=document.getElementById('rview-calc-total');
   if(totEl) totEl.textContent='Total calculé : '+tot.toFixed(0)+' g'+' (×'+f.toFixed(f%1===0?0:2)+')';
 }
+// ─── Partager en PDF (feuille de partage iOS) ────────────────────────────────
+const _PDF_OK=new Set('\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2020\u2021\u2022\u2026\u2030\u2039\u203A\u20AC'.split(''));
+function _pdfSan(t){
+  t=String(t==null?'':t);
+  return Array.from(t).map(function(c){
+    const k=c.charCodeAt(0);
+    if(k===9||k===10||(k>=32&&k<=126)||(k>=160&&k<=255)||_PDF_OK.has(c))return c;
+    if(k===0x202F||k===0x2009||k===0x2007||k===0x2002||k===0x2003)return ' ';
+    if(k===0x2212)return '-';
+    if(k===0x2192)return '->';
+    if(k===0x2044)return '/';
+    const n=c.normalize('NFKC').replace(/\u2044/g,'/');
+    if(n!==c&&/^[\x20-\x7E]+$/.test(n))return n;
+    return '?';
+  }).join('');
+}
+function _collectPrintZone(){
+  const g=function(id){const e=document.getElementById(id);return e?(e.textContent||''):'';};
+  const rows=[];
+  document.querySelectorAll('#pz-table .result-head, #pz-table .result-row').forEach(function(el){
+    const cells=Array.from(el.children).map(function(c){
+      const k=c.cloneNode(true);
+      k.querySelectorAll('small').forEach(function(s){s.textContent=' '+s.textContent;});
+      return (k.textContent||'').trim();
+    });
+    rows.push({head:el.classList.contains('result-head'),tot:el.classList.contains('tot-row'),cells:cells});
+  });
+  const techEl=document.getElementById('pz-tech');
+  let techTitle='',techText='';
+  if(techEl){
+    const tt=techEl.querySelector('#pz-tech-title');
+    techTitle=tt?(tt.textContent||''):'';
+    techText=(techEl.textContent||'').slice(techTitle.length).trim();
+  }
+  return {name:g('pz-name').trim(),sub:g('pz-sub').trim(),date:g('pz-date').trim(),rows:rows,techTitle:techTitle,techText:techText,notes:g('pz-notes').trim()};
+}
+function _buildPdf(d){
+  const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});
+  const S=_pdfSan, M=15, R=195, X2=150, X3=193, W1=X2-M-30;
+  let y=M+4;
+  const need=function(h){if(y+h>285){doc.addPage();y=M;}};
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(62,32,16);
+  doc.splitTextToSize(S(d.name),R-M).forEach(function(l){need(8);doc.text(l,M,y);y+=8;});
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(154,140,122);
+  doc.splitTextToSize(S(d.sub),R-M).forEach(function(l){need(5);doc.text(l,M,y);y+=4.6;});
+  if(d.date){need(5);doc.text(S(d.date),M,y);y+=4.6;}
+  y+=1;doc.setDrawColor(196,154,60);doc.setLineWidth(.6);doc.line(M,y,R,y);y+=5;
+  let alt=0;
+  d.rows.forEach(function(r){
+    const c=r.cells,label=doc.splitTextToSize(S(c[0]||''),W1);
+    const h=Math.max(6.6,label.length*4.4+2.6);
+    need(h);
+    if(r.head){doc.setFillColor(62,32,16);alt=0;}
+    else if(r.tot){doc.setFillColor(238,226,200);}
+    else{doc.setFillColor(alt%2?255:249,alt%2?255:243,alt%2?255:230);alt++;}
+    doc.rect(M,y,R-M,h,'F');
+    const ty=y+4.5;
+    doc.setFont('helvetica',(r.head||r.tot)?'bold':'normal');
+    doc.setFontSize(r.head?8.5:9.5);
+    doc.setTextColor(r.head?255:62,r.head?255:32,r.head?255:16);
+    label.forEach(function(l,i){doc.text(l,M+2,ty+i*4.4);});
+    doc.text(S(c[1]||''),X2,ty,{align:'right'});
+    if(!r.head&&!r.tot&&c[2])doc.setTextColor(150,100,20);
+    if(!r.head&&!r.tot&&c[2])doc.setFont('helvetica','bold');
+    doc.text(S(c[2]||''),X3,ty,{align:'right'});
+    y+=h;
+  });
+  y+=7;
+  const blocks=[];
+  if(d.notes)blocks.push(['Procédé',d.notes]);
+  if(d.techText)blocks.push([d.techTitle||'Technique de fabrication',d.techText]);
+  blocks.forEach(function(b){
+    need(14);doc.setDrawColor(196,154,60);doc.setLineWidth(.3);doc.line(M,y,R,y);y+=6;
+    doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(123,79,46);doc.text(S(b[0]),M,y);y+=6;
+    doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(62,32,16);
+    S(b[1]).split('\n').forEach(function(p){
+      if(!p.trim()){y+=2.5;return;}
+      doc.splitTextToSize(p,R-M).forEach(function(l){need(4.8);doc.text(l,M,y);y+=4.6;});
+    });
+    y+=4;
+  });
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(154,140,122);doc.text(S(d.name)+'  -  page '+i+'/'+n,M,292);}
+  return doc;
+}
+function _pdfToText(d){
+  const out=[d.name,d.sub,''];
+  d.rows.forEach(function(r){out.push(r.cells.filter(Boolean).join('  -  '));});
+  if(d.notes)out.push('','Procédé',d.notes);
+  if(d.techText)out.push('',d.techTitle||'Technique de fabrication',d.techText);
+  return out.join('\n');
+}
+async function _partagerTexte(d){
+  const txt=_pdfToText(d);
+  try{
+    if(navigator.share){await navigator.share({title:d.name,text:txt});return;}
+    await navigator.clipboard.writeText(txt);notify('Texte copié.');
+  }catch(e){if(e&&e.name!=='AbortError')notify('Partage impossible : '+e.message,true);}
+}
+async function _partagerPdfDepuis(printFn){
+  const orig=window.print;let d=null;
+  try{window.print=function(){};printFn();d=_collectPrintZone();}
+  finally{window.print=orig;}
+  if(!d||!d.name){notify('Rien à partager.',true);return;}
+  if(!(window.jspdf&&window.jspdf.jsPDF)){return _partagerTexte(d);}
+  let blob;
+  try{blob=_buildPdf(d).output('blob');}
+  catch(e){console.error(e);notify('PDF impossible : '+e.message,true);return _partagerTexte(d);}
+  const slug=(d.name||'fiche').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'fiche';
+  const fname=slug+'.pdf';
+  const file=new File([blob],fname,{type:'application/pdf'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:d.name});}
+    catch(e){if(e&&e.name!=='AbortError')notify('Partage impossible : '+e.message,true);}
+    return;
+  }
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=fname;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);},5000);
+  notify('PDF téléchargé.');
+}
+function partagerRview(){_partagerPdfDepuis(printRviewRecipe);}
+function partagerFiche(){_partagerPdfDepuis(_printFicheView);}
+
 function printRviewRecipe(){
   if(!currentRview)return;
   const r=currentRview;
